@@ -26,7 +26,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
 
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
-  Win32Window::Size size(500, 1080);
+  Win32Window::Size size(500, 800);
   if (!window.Create(L"photography_toolbox", origin, size)) {
     return EXIT_FAILURE;
   }
