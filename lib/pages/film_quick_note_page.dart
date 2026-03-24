@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../widgets/app_drawer.dart';
 import '../services/film_storage.dart';
 import '../services/app_localizations.dart';
@@ -63,6 +64,7 @@ class _FilmQuickNotePageState extends State<FilmQuickNotePage> {
             TextField(
               controller: isoCtrl,
               keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: InputDecoration(
                 labelText: l.t('film_sensitivity'),
                 hintText: l.t('film_sensitivity_hint'),

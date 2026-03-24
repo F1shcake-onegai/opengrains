@@ -29,6 +29,9 @@ class _RollDetailPageState extends State<RollDetailPage> {
   Future<void> _loadRoll() async {
     final roll = await FilmStorage.loadRoll(widget.rollId);
     if (roll != null) {
+      // Sort shots on load
+      final shots = (roll['shots'] as List).cast<Map<String, dynamic>>();
+      shots.sort(_compareShots);
       setState(() {
         _roll = roll;
         _commentCtrl.text = roll['comments'] as String? ?? '';
@@ -64,6 +67,31 @@ class _RollDetailPageState extends State<RollDetailPage> {
         .cast<Map<String, dynamic>>();
   }
 
+  /// Compare two shots by sequence number, then by createdAt timestamp.
+  static int _compareShots(Map<String, dynamic> a, Map<String, dynamic> b) {
+    final seqA = a['sequence'] as int? ?? 0;
+    final seqB = b['sequence'] as int? ?? 0;
+    if (seqA != seqB) return seqA.compareTo(seqB);
+    final tsA = a['createdAt'] as int? ?? 0;
+    final tsB = b['createdAt'] as int? ?? 0;
+    return tsA.compareTo(tsB);
+  }
+
+  /// Move a single shot to its sorted position (efficient single-element reposition).
+  void _repositionShot(Map<String, dynamic> shot) {
+    final shots = _shots;
+    shots.remove(shot);
+    // Find insertion point
+    int insertAt = shots.length;
+    for (int i = 0; i < shots.length; i++) {
+      if (_compareShots(shot, shots[i]) <= 0) {
+        insertAt = i;
+        break;
+      }
+    }
+    shots.insert(insertAt, shot);
+  }
+
   Future<void> _addShot() async {
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
@@ -75,6 +103,7 @@ class _RollDetailPageState extends State<RollDetailPage> {
     );
     if (result != null && _roll != null) {
       _shots.add(result);
+      _repositionShot(result);
       await FilmStorage.updateRoll(_roll!);
       setState(() {});
     }
@@ -92,6 +121,7 @@ class _RollDetailPageState extends State<RollDetailPage> {
     );
     if (result != null && _roll != null) {
       _shots[index] = result;
+      _repositionShot(result);
       await FilmStorage.updateRoll(_roll!);
       setState(() {});
     }

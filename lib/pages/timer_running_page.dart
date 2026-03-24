@@ -739,6 +739,7 @@ class _TimerRunningPageState extends State<TimerRunningPage>
                           keyboardType:
                               const TextInputType.numberWithOptions(
                                   decimal: true),
+                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
                           decoration: InputDecoration(
                             suffixText: '\u00b0C',
                             suffixStyle:

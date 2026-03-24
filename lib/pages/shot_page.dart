@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/film_storage.dart';
 import '../services/app_localizations.dart';
@@ -85,6 +86,8 @@ class _ShotPageState extends State<ShotPage> {
       'sequence': seq,
       'imagePath': _imagePath ?? '',
       'comment': _commentCtrl.text,
+      'createdAt': widget.existingShot?['createdAt'] ??
+          DateTime.now().millisecondsSinceEpoch,
     };
     Navigator.pop(context, shot);
   }
@@ -119,6 +122,7 @@ class _ShotPageState extends State<ShotPage> {
             TextField(
               controller: _seqCtrl,
               keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: const InputDecoration(
                   border: OutlineInputBorder()),
             ),

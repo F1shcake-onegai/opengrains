@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/app_localizations.dart';
 
 class RecipeEditPage extends StatefulWidget {
@@ -152,6 +153,7 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
           child: TextField(
             controller: minCtrl,
             keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             textAlign: TextAlign.center,
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
@@ -170,6 +172,7 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
           child: TextField(
             controller: secCtrl,
             keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             textAlign: TextAlign.center,
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
@@ -310,6 +313,7 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
                 controller: TextEditingController(
                     text: (agitation['speed'] as int? ?? 60).toString()),
                 keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
                   suffixText: l.t('recipe_agitation_rpm'),
                   border: const OutlineInputBorder(),

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
 import '../services/app_localizations.dart';
 import '../services/light_meter_constants.dart';
@@ -375,6 +376,7 @@ class _LightMeterPageState extends State<LightMeterPage>
                       controller: _manualEvCtrl,
                       keyboardType: const TextInputType.numberWithOptions(
                           decimal: true, signed: true),
+                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.\-]'))],
                       textAlign: TextAlign.center,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),

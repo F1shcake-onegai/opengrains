@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../widgets/app_drawer.dart';
 import '../services/app_localizations.dart';
 
@@ -355,6 +356,10 @@ class _LightpadPageState extends State<LightpadPage> {
                   // Hex input
                   TextField(
                     controller: hexCtrl,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9a-fA-F]')),
+                      LengthLimitingTextInputFormatter(6),
+                    ],
                     decoration: InputDecoration(
                       labelText: l.t('lightpad_hex'),
                       prefixText: '#',
@@ -471,6 +476,7 @@ class _LightpadPageState extends State<LightpadPage> {
               child: TextField(
                 controller: controller,
                 keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 style: const TextStyle(fontSize: 13),
                 decoration: const InputDecoration(
                   contentPadding: EdgeInsets.symmetric(

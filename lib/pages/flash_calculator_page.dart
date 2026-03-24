@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../widgets/app_drawer.dart';
 import '../services/aperture_settings.dart';
 import '../services/app_localizations.dart';
@@ -456,6 +457,7 @@ class _FlashCalculatorPageState extends State<FlashCalculatorPage> {
           controller: controller,
           keyboardType: const TextInputType.numberWithOptions(
               decimal: true),
+          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
           decoration: InputDecoration(
               hintText: hint,
               border: const OutlineInputBorder()),

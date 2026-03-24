@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../widgets/app_drawer.dart';
 import '../services/app_localizations.dart';
 import '../services/reciprocity_storage.dart';
@@ -265,6 +266,7 @@ class _ReciprocityCalculatorPageState
                     keyboardType:
                         const TextInputType.numberWithOptions(
                             decimal: true),
+                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
                     decoration: InputDecoration(
                       hintText: _formatSliderTime(
                           _meteredTimes[_meteredTimeIndex]),
@@ -535,6 +537,7 @@ class _CustomFilmSheetState extends State<_CustomFilmSheet> {
               controller: expCtrl,
               keyboardType: const TextInputType.numberWithOptions(
                   decimal: true),
+              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
               decoration: InputDecoration(
                 labelText: l.t('reciprocity_custom_exponent'),
                 border: const OutlineInputBorder(),
@@ -545,6 +548,7 @@ class _CustomFilmSheetState extends State<_CustomFilmSheet> {
               controller: threshCtrl,
               keyboardType: const TextInputType.numberWithOptions(
                   decimal: true),
+              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
               decoration: InputDecoration(
                 labelText: l.t('reciprocity_custom_threshold'),
                 border: const OutlineInputBorder(),
