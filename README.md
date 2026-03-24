@@ -16,11 +16,18 @@ Log your film rolls and individual shots. Each roll stores brand, model, ISO, co
 ### Lightpad
 Turn your screen into a light source with adjustable color, brightness, and transparency. Includes a fullscreen mode — long-press for 2 seconds to exit. Color picker supports hex input and HSV sliders.
 
-### Darkroom Clock
-_Coming soon._
+### Reciprocity Failure Calculator
+Compensate for reciprocity failure in long exposures. Select from 20 built-in film presets (Ilford, Kodak, Fuji — negative and slide) or create custom film profiles with your own Schwarzschild exponent and threshold. Enter the metered time via slider or exact input; see the corrected exposure time and extra stops needed.
+
+### Light Meter
+Camera-based light meter that reads live EV from your scene. Choose between center-weighted, matrix, and average metering modes, or tap the preview to set a point metering spot. Three exposure parameters (aperture, shutter speed, ISO) can be adjusted with arrow buttons; tap any parameter to make it the calculated one. Configurable exposure step size (1, 1/2, 1/3, 1/4 stops). Desktop shows a manual EV input fallback.
+
+### Darkroom Timer
+Create and manage darkroom development recipes with multi-step timers. Each recipe includes film stock, developer, dilution, temperature compensation, and agitation settings. The running timer features an Apple Clock-style rolling step list, push notifications, haptic feedback, and a full darkroom safelight mode with red-tinted UI.
 
 ### Settings
 - **Maximum aperture**: Configure the widest aperture stop available across calculators (e.g., f/0.95, f/1.0, f/1.4). Shared by Flash Calculator and Depth of Field Calculator.
+- **Exposure step**: Sets the increment size (1, 1/2, 1/3, 1/4 stops) for the light meter.
 - **Language**: English, Japanese (日本語), Simplified Chinese (简体中文), or follow system locale.
 
 ## Localization
@@ -69,6 +76,8 @@ lib/
     roll_detail_page.dart         # Single roll view with shots
     shot_page.dart                # Add/edit a shot
     lightpad_page.dart            # Lightpad with color picker
+    reciprocity_calculator_page.dart # Reciprocity failure calculator
+    light_meter_page.dart         # Camera-based light meter
     darkroom_timer_page.dart      # Darkroom timer recipe list
     recipe_edit_page.dart         # Create/edit darkroom recipes
     timer_running_page.dart       # Active countdown timer with step progression
@@ -78,6 +87,8 @@ lib/
     app_localizations.dart        # JSON-based i18n with LocalizationsDelegate
     film_storage.dart             # JSON-based local storage for film rolls
     recipe_storage.dart           # JSON-based local storage for darkroom recipes
+    reciprocity_storage.dart      # Film reciprocity presets + custom profile storage
+    light_meter_constants.dart    # Photography value lists, EV math, exposure step settings
     locale_settings.dart          # Persists locale preference
   widgets/
     app_drawer.dart               # Navigation drawer for feature pages

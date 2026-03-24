@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/app_drawer.dart';
 import '../services/aperture_settings.dart';
 import '../services/app_localizations.dart';
+import '../services/light_meter_constants.dart';
 import '../services/locale_settings.dart';
 import '../main.dart';
 
@@ -14,6 +15,7 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   double _selectedMaxAperture = ApertureSettings.defaultMaxAperture;
+  ExposureStep _selectedExposureStep = ExposureStepSettings.defaultStep;
   String? _selectedLocale;
   bool _loaded = false;
 
@@ -26,15 +28,18 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _loadSetting() async {
     final value = await ApertureSettings.load();
     final locale = await LocaleSettings.load();
+    final step = await ExposureStepSettings.load();
     setState(() {
       _selectedMaxAperture = value;
       _selectedLocale = locale;
+      _selectedExposureStep = step;
       _loaded = true;
     });
   }
 
   Future<void> _save() async {
     await ApertureSettings.save(_selectedMaxAperture);
+    await ExposureStepSettings.save(_selectedExposureStep);
     await LocaleSettings.save(_selectedLocale);
     if (mounted) {
       PhotographyToolboxApp.setLocale(context, _selectedLocale);
@@ -47,6 +52,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void _revoke() {
     setState(() {
       _selectedMaxAperture = ApertureSettings.defaultMaxAperture;
+      _selectedExposureStep = ExposureStepSettings.defaultStep;
       _selectedLocale = null;
     });
   }
@@ -140,6 +146,35 @@ class _SettingsPageState extends State<SettingsPage> {
                   const SizedBox(height: 8),
                   Text(
                     l.t('settings_max_aperture_desc'),
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 24),
+
+                  Text(l.t('settings_exposure_step'),
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<ExposureStep>(
+                    initialValue: _selectedExposureStep,
+                    decoration: const InputDecoration(
+                        border: OutlineInputBorder()),
+                    items: ExposureStep.values
+                        .map((s) => DropdownMenuItem(
+                            value: s,
+                            child: Text(ExposureStepSettings.label(s))))
+                        .toList(),
+                    onChanged: (v) {
+                      if (v != null) {
+                        setState(() => _selectedExposureStep = v);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l.t('settings_exposure_step_desc'),
                     style: TextStyle(
                         fontSize: 12,
                         color: colorScheme.onSurfaceVariant),

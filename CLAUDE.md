@@ -48,6 +48,8 @@ A `GestureDetector` in `MaterialApp.builder` dismisses the keyboard on tap outsi
 - `ApertureSettings` — persists max aperture in SharedPreferences; `stopsFrom()` filters the aperture stop list. Shared by Flash Calculator and DOF Calculator.
 - `FilmStorage` — CRUD for film rolls stored as `film_rolls.json` in app documents directory. Also manages `film_images/` directory for shot photos.
 - `RecipeStorage` — CRUD for darkroom recipes stored as `recipes.json` in app documents directory. Also handles JSON import/export for recipe sharing.
+- `ReciprocityStorage` — CRUD for custom reciprocity film profiles stored as `reciprocity_profiles.json` in app documents directory. Also contains hardcoded preset data for 20 common films (Ilford, Kodak, Fuji — both negative and slide).
+- `LightMeterConstants` — photography value lists (aperture, shutter, ISO) in full/half/third/quarter stops, EV math functions, and exposure step settings persistence via `ExposureStepSettings`.
 - `LocaleSettings` — persists locale preference (`null` = follow system).
 
 ### Darkroom Timer
@@ -74,6 +76,29 @@ Three-page feature: recipe list → recipe editor → running timer.
 
 **Bundled fonts**: Noto Sans (Latin), Noto Sans JP, Noto Sans SC in `assets/fonts/` with `fontFamilyFallback` in theme for CJK coverage.
 
+### Light Meter
+
+Camera-based light meter (`light_meter_page.dart`) with `WidgetsBindingObserver` for lifecycle management.
+
+- Live camera preview via `camera` package with `startImageStream` for frame-by-frame luminance analysis
+- EV formula: `EV₁₀₀ = log2(N² / t)`, adjusted for ISO
+- Three base metering modes: center-weighted (Gaussian), matrix (center-biased zones), average
+- Point metering: tap anywhere on the preview to override with spot metering (independent of mode selector); "× Point" chip clears the active point
+- Three exposure parameters (aperture, shutter, ISO) with `<` `>` arrows; tap a parameter to make it the calculated one (arrows hidden, value auto-computed)
+- Configurable exposure step size (1, 1/2, 1/3, 1/4 stops) via Settings → persisted in `ExposureStepSettings`
+- Platform guard: desktop shows manual EV text input instead of camera
+
+### Reciprocity Failure Calculator
+
+Single-page calculator (`reciprocity_calculator_page.dart`) following the flash/DOF calculator pattern.
+
+- Schwarzschild power law: `t_corrected = t_metered ^ p` with per-film exponent and threshold
+- 20 built-in film presets (Ilford, Kodak, Fuji — B&W, color negative, and slide) hardcoded in `ReciprocityStorage.presets`
+- Custom film profiles: user can add/edit/delete via bottom sheet, persisted as JSON (`reciprocity_profiles.json`)
+- Film dropdown groups presets by brand with section headers; custom profiles appended; "Manage Custom Films..." action at bottom
+- Metered time: discrete slider (0.5s–960s) + exact text field override
+- Results: corrected time (formatted as hours/min/sec) + extra stops
+
 ### Key Patterns
 
 - All feature pages use `AppDrawer` for navigation and have a back button that does `pushReplacementNamed(context, '/')`.
@@ -82,7 +107,7 @@ Three-page feature: recipe list → recipe editor → running timer.
 - Film rolls use millisecond timestamp as string ID.
 - Recipes use millisecond timestamp as string ID.
 - Lightpad fullscreen exit uses a 2-second long-press with animated ring progress (`_RingPainter`).
-- Calculator result areas are pinned to the bottom of the screen with structured cards (small label + large bold value).
+- Calculator result areas are pinned to the bottom of the screen with structured cards (small label + large bold value) in `surfaceContainerHighest` container with rounded top corners.
 - Camera button in shot page is only shown on mobile (iOS/Android); desktop uses file picker only.
 - `image_picker` camera requires `CAMERA` permission in AndroidManifest.xml and `NSCameraUsageDescription` in iOS Info.plist.
 - iOS xcconfig files use `#include?` (optional include) for `Generated.xcconfig` to avoid build failures on fresh clones.

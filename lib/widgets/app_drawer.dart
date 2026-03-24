@@ -49,6 +49,18 @@ class AppDrawer extends StatelessWidget {
             selected: currentRoute == '/dof_calculator',
           ),
           _DrawerItem(
+            icon: Icons.exposure,
+            title: l.t('feature_reciprocity'),
+            route: '/reciprocity_calculator',
+            selected: currentRoute == '/reciprocity_calculator',
+          ),
+          _DrawerItem(
+            icon: Icons.wb_sunny_outlined,
+            title: l.t('feature_light_meter'),
+            route: '/light_meter',
+            selected: currentRoute == '/light_meter',
+          ),
+          _DrawerItem(
             icon: Icons.lightbulb_outlined,
             title: l.t('feature_lightpad'),
             route: '/lightpad',

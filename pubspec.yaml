@@ -1,7 +1,7 @@
 name: photography_toolbox
 description: "A companion app for analog photography."
 publish_to: 'none'
-version: 0.1.2
+version: 0.2.0
 
 environment:
   sdk: ^3.10.3
@@ -19,6 +19,7 @@ dependencies:
   file_picker: ^8.1.7
   wakelock_plus: ^1.2.8
   flutter_local_notifications: ^19.0.0
+  camera: ^0.11.0+2
 
 dependency_overrides:
   flutter_local_notifications_windows:

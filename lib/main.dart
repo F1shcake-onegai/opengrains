@@ -9,7 +9,9 @@ import 'pages/flash_calculator_page.dart';
 import 'pages/dof_calculator_page.dart';
 import 'pages/film_quick_note_page.dart';
 import 'pages/darkroom_timer_page.dart';
+import 'pages/light_meter_page.dart';
 import 'pages/lightpad_page.dart';
+import 'pages/reciprocity_calculator_page.dart';
 import 'pages/settings_page.dart';
 
 void main() async {
@@ -104,6 +106,8 @@ class _PhotographyToolboxAppState extends State<PhotographyToolboxApp> {
         '/dof_calculator': (context) => const DofCalculatorPage(),
         '/film_quick_note': (context) => const FilmQuickNotePage(),
         '/darkroom_timer': (context) => const DarkroomTimerPage(),
+        '/light_meter': (context) => const LightMeterPage(),
+        '/reciprocity_calculator': (context) => const ReciprocityCalculatorPage(),
         '/lightpad': (context) => const LightpadPage(),
         '/settings': (context) => const SettingsPage(),
       },

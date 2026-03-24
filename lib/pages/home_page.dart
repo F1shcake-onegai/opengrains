@@ -15,6 +15,8 @@ const _features = [
   _Feature(titleKey: 'feature_darkroom_clock', icon: Icons.timer_outlined, route: '/darkroom_timer'),
   _Feature(titleKey: 'feature_flash_calculator', icon: Icons.flash_on_outlined, route: '/flash_calculator'),
   _Feature(titleKey: 'feature_depth_of_field', icon: Icons.camera_outlined, route: '/dof_calculator'),
+  _Feature(titleKey: 'feature_reciprocity', icon: Icons.exposure, route: '/reciprocity_calculator'),
+  _Feature(titleKey: 'feature_light_meter', icon: Icons.wb_sunny_outlined, route: '/light_meter'),
   _Feature(titleKey: 'feature_lightpad', icon: Icons.lightbulb_outlined, route: '/lightpad'),
   _Feature(titleKey: 'feature_settings', icon: Icons.settings_outlined, route: '/settings'),
 ];
@@ -82,7 +84,7 @@ class HomePage extends StatelessWidget {
                 onPressed: () => showAboutDialog(
                   context: context,
                   applicationName: 'Photography Toolbox',
-                  applicationVersion: '1.0.1 (Mar 12 Image Picker Fix)',
+                  applicationVersion: '0.2.0 (Reciprocity / Light Meter Update)',
                   children: [
                     Text(l.t('app_about_description')),
                     const SizedBox(height: 12),
