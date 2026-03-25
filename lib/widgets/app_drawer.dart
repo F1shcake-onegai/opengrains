@@ -66,6 +66,12 @@ class AppDrawer extends StatelessWidget {
             route: '/lightpad',
             selected: currentRoute == '/lightpad',
           ),
+          _DrawerItem(
+            icon: Icons.science_outlined,
+            title: l.t('feature_chemical_mixer'),
+            route: '/chemical_mixer',
+            selected: currentRoute == '/chemical_mixer',
+          ),
           const Divider(),
           _DrawerItem(
             icon: Icons.settings_outlined,

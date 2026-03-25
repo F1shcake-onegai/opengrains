@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../services/app_localizations.dart';
 
 class _Feature {
@@ -18,7 +17,7 @@ const _features = [
   _Feature(titleKey: 'feature_reciprocity', icon: Icons.exposure, route: '/reciprocity_calculator'),
   _Feature(titleKey: 'feature_light_meter', icon: Icons.wb_sunny_outlined, route: '/light_meter'),
   _Feature(titleKey: 'feature_lightpad', icon: Icons.lightbulb_outlined, route: '/lightpad'),
-  _Feature(titleKey: 'feature_settings', icon: Icons.settings_outlined, route: '/settings'),
+  _Feature(titleKey: 'feature_chemical_mixer', icon: Icons.science_outlined, route: '/chemical_mixer'),
 ];
 
 class HomePage extends StatelessWidget {
@@ -80,28 +79,10 @@ class HomePage extends StatelessWidget {
               top: 8,
               right: 8,
               child: IconButton(
-                icon: const Icon(Icons.info_outline),
-                onPressed: () => showAboutDialog(
-                  context: context,
-                  applicationName: 'Photography Toolbox',
-                  applicationVersion: '1.2.2 (Build Mar 24, 2026)',
-                  children: [
-                    Text(l.t('app_about_description')),
-                    const SizedBox(height: 12),
-                    GestureDetector(
-                      onTap: () => launchUrl(Uri.parse(
-                          'https://github.com/F1shcake-onegai/photography_toolbox')),
-                      child: const Text(
-                        'github.com/F1shcake-onegai/photography_toolbox',
-                        style: TextStyle(
-                            color: Colors.blue,
-                            decoration: TextDecoration.underline),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(l.t('app_about_author')),
-                  ],
-                ),              ),            ),          ],
+                icon: const Icon(Icons.settings_outlined),
+                onPressed: () => Navigator.pushNamed(context, '/settings'),
+              ),
+            ),          ],
         ),
       ),
     );

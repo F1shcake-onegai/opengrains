@@ -148,11 +148,12 @@ class _LightpadPageState extends State<LightpadPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () =>
-              Navigator.pushReplacementNamed(context, '/'),
+              Navigator.pop(context),
         ),
         title: Text(l.t('lightpad_title')),
       ),
       drawer: const AppDrawer(),
+      drawerEnableOpenDragGesture: false,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../widgets/app_drawer.dart';
 import '../services/aperture_settings.dart';
 import '../services/app_localizations.dart';
@@ -86,11 +87,12 @@ class _SettingsPageState extends State<SettingsPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () =>
-              Navigator.pushReplacementNamed(context, '/'),
+              Navigator.pop(context),
         ),
         title: Text(l.t('settings_title')),
       ),
       drawer: const AppDrawer(),
+      drawerEnableOpenDragGesture: false,
       body: !_loaded
           ? const Center(child: CircularProgressIndicator())
           : Padding(
@@ -98,11 +100,61 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(l.t('settings_heading'),
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall),
-                  const SizedBox(height: 24),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () => showAboutDialog(
+                      context: context,
+                      applicationName: 'Photography Toolbox',
+                      applicationVersion: '1.3.0 (Build Mar 25, 2026)',
+                      applicationLegalese: '\u00a9 2026 @f1shcake_onegai\nLicensed under CC0 1.0 Universal',
+                      children: [
+                        const SizedBox(height: 12),
+                        Text(l.t('app_about_description')),
+                        const SizedBox(height: 12),
+                        GestureDetector(
+                          onTap: () => launchUrl(Uri.parse(
+                              'https://github.com/F1shcake-onegai/photography_toolbox')),
+                          child: const Text(
+                            'github.com/F1shcake-onegai/photography_toolbox',
+                            style: TextStyle(
+                                color: Colors.blue,
+                                decoration: TextDecoration.underline),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(l.t('app_about_author')),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Photography Toolbox',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 2),
+                                Text('1.3.0 (Build Mar 25, 2026)',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: colorScheme.onSurfaceVariant)),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.info_outline,
+                              size: 20,
+                              color: colorScheme.onSurfaceVariant),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Divider(),
+                  const SizedBox(height: 16),
 
                   Text(l.t('settings_language'),
                       style: TextStyle(

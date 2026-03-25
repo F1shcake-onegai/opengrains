@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/app_localizations.dart';
+import 'chemical_mixer_page.dart';
 
 // ───── Safelight darkroom palette ─────
 const _slBg = Color(0xFF0A0000);
@@ -718,6 +719,22 @@ class _TimerRunningPageState extends State<TimerRunningPage>
             backgroundColor: appBarBg ?? Colors.transparent,
             foregroundColor: cs.onSurface,
             elevation: 0,
+            actions: [
+              if ((widget.recipe['dilution'] as String? ?? '').isNotEmpty)
+                IconButton(
+                  icon: Icon(Icons.science_outlined, color: cs.onSurface),
+                  tooltip: l.t('mixer_title'),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChemicalMixerPage(
+                        prefillDilution:
+                            widget.recipe['dilution'] as String?,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
           body: Column(
             children: [

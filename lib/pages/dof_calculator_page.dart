@@ -141,11 +141,12 @@ class _DofCalculatorPageState extends State<DofCalculatorPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () =>
-              Navigator.pushReplacementNamed(context, '/'),
+              Navigator.pop(context),
         ),
         title: Text(l.t('dof_title')),
       ),
       drawer: const AppDrawer(),
+      drawerEnableOpenDragGesture: false,
       body: Column(
         children: [
           Expanded(
@@ -154,9 +155,6 @@ class _DofCalculatorPageState extends State<DofCalculatorPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(l.t('dof_heading'),
-                      style: Theme.of(context).textTheme.headlineSmall),
-                  const SizedBox(height: 16),
 
                   // Focal Length - input box
                   _labeledTextField(l.t('dof_focal_length'),
@@ -172,13 +170,15 @@ class _DofCalculatorPageState extends State<DofCalculatorPage> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Text(
-                          'f/${_apertureStops[_apertureIndex]}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold)),
-                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 56,
+                        child: Text(
+                            'f/${_apertureStops[_apertureIndex]}',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold)),
+                      ),
                       Expanded(
                         child: Slider(
                           value: _apertureIndex.toDouble(),
@@ -224,7 +224,7 @@ class _DofCalculatorPageState extends State<DofCalculatorPage> {
                   Row(
                     children: [
                       SizedBox(
-                        width: 72,
+                        width: 56,
                         child: Text(
                             _formatDistance(_subjectDistance),
                             style: Theme.of(context)

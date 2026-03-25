@@ -173,11 +173,12 @@ class _FlashCalculatorPageState extends State<FlashCalculatorPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () =>
-              Navigator.pushReplacementNamed(context, '/'),
+              Navigator.pop(context),
         ),
         title: Text(l.t('flash_title')),
       ),
       drawer: const AppDrawer(),
+      drawerEnableOpenDragGesture: false,
       body: Column(
         children: [
           Expanded(
@@ -186,23 +187,27 @@ class _FlashCalculatorPageState extends State<FlashCalculatorPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(l.t('flash_title'),
-                      style: Theme.of(context).textTheme.headlineSmall),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(_calculatePower
-                          ? l.t('flash_mode_power')
-                          : l.t('flash_mode_distance')),
-                      Switch(
-                        value: _calculatePower,
-                        onChanged: (v) => setState(() {
-                          _calculatePower = v;
-                          _compute();
-                        }),
+                  Text(l.t('flash_calculate_label'),
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: 6),
+                  SegmentedButton<bool>(
+                    segments: [
+                      ButtonSegment<bool>(
+                        value: true,
+                        label: Text(l.t('flash_power')),
+                      ),
+                      ButtonSegment<bool>(
+                        value: false,
+                        label: Text(l.t('flash_distance')),
                       ),
                     ],
+                    selected: {_calculatePower},
+                    onSelectionChanged: (v) => setState(() {
+                      _calculatePower = v.first;
+                      _compute();
+                    }),
                   ),
                   const SizedBox(height: 12),
 
@@ -220,13 +225,15 @@ class _FlashCalculatorPageState extends State<FlashCalculatorPage> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Text(
-                          'f/${_apertureStops[_apertureIndex]}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold)),
-                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 56,
+                        child: Text(
+                            'f/${_apertureStops[_apertureIndex]}',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold)),
+                      ),
                       Expanded(
                         child: Slider(
                           value: _apertureIndex.toDouble(),
@@ -270,7 +277,7 @@ class _FlashCalculatorPageState extends State<FlashCalculatorPage> {
                   Row(
                     children: [
                       SizedBox(
-                        width: 72,
+                        width: 56,
                         child: Text(
                             _formatDistance(_distance),
                             style: Theme.of(context)
@@ -322,13 +329,15 @@ class _FlashCalculatorPageState extends State<FlashCalculatorPage> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Text(
-                          _powerKeys[_powerIndex],
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold)),
-                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 56,
+                        child: Text(
+                            _powerKeys[_powerIndex],
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold)),
+                      ),
                       Expanded(
                         child: Slider(
                           value: _powerIndex.toDouble(),

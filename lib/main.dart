@@ -16,6 +16,7 @@ import 'pages/light_meter_page.dart';
 import 'pages/lightpad_page.dart';
 import 'pages/reciprocity_calculator_page.dart';
 import 'pages/settings_page.dart';
+import 'pages/chemical_mixer_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -157,6 +158,7 @@ class _PhotographyToolboxAppState extends State<PhotographyToolboxApp> {
         '/reciprocity_calculator': (context) => const ReciprocityCalculatorPage(),
         '/lightpad': (context) => const LightpadPage(),
         '/settings': (context) => const SettingsPage(),
+        '/chemical_mixer': (context) => const ChemicalMixerPage(),
       },
     );
   }

@@ -163,7 +163,7 @@ Both recipe and roll list pages share the same pattern via `ListSearchBar` widge
 
 ### Key Patterns
 
-- All feature pages use `AppDrawer` for navigation and have a back button that does `pushReplacementNamed(context, '/')`.
+- All feature pages use `AppDrawer` for navigation and have a back button that does `Navigator.pop(context)`. The drawer uses `pushReplacementNamed` to swap between feature pages (keeping Home at the stack bottom).
 - Aperture sliders use index-based discrete sliders over the `ApertureSettings.stopsFrom()` list.
 - Distance sliders use logarithmic scale (`log10` / `pow(10, v)`).
 - Film rolls and recipes use UUID v4 as string ID (legacy timestamp IDs auto-migrated on load).

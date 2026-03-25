@@ -77,9 +77,10 @@ class _DarkroomTimerPageState extends State<DarkroomTimerPage> {
   static String _processLabel(String type) {
     return switch (type) {
       'bw_neg' => 'B&W Neg',
-      'bw_pos' => 'B&W Pos',
+      'bw_pos' => 'B&W Rev',
       'color_neg' => 'Color Neg',
-      'color_pos' => 'Color Pos',
+      'color_pos' => 'Color Rev',
+      'paper' => 'Paper',
       _ => 'B&W Neg',
     };
   }
@@ -235,12 +236,35 @@ class _DarkroomTimerPageState extends State<DarkroomTimerPage> {
           builder: (_) => RecipeEditPage(existingRecipe: recipe)),
     );
     if (result != null) {
-      await RecipeStorage.updateRecipe(result);
+      if (result['_deleted'] == true) {
+        await RecipeStorage.deleteRecipe(result['id'] as String);
+      } else {
+        await RecipeStorage.updateRecipe(result);
+      }
       await _load();
     }
   }
 
   Future<void> _duplicateRecipe(Map<String, dynamic> recipe) async {
+    final l = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.t('recipe_duplicate')),
+        content: Text(l.t('recipe_duplicate_message')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l.t('recipe_cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l.t('recipe_duplicate')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
     final copy = Map<String, dynamic>.from(recipe);
     copy['id'] = RecipeStorage.newUuid();
     copy['steps'] = (recipe['steps'] as List)
@@ -250,30 +274,6 @@ class _DarkroomTimerPageState extends State<DarkroomTimerPage> {
     await _load();
   }
 
-  Future<void> _deleteRecipe(Map<String, dynamic> recipe) async {
-    final l = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l.t('recipe_delete_title')),
-        content: Text(l.t('recipe_delete_message')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l.t('recipe_cancel')),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l.t('recipe_delete')),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await RecipeStorage.deleteRecipe(recipe['id'] as String);
-      await _load();
-    }
-  }
 
   Future<void> _shareRecipe(Map<String, dynamic> recipe) async {
     final l = AppLocalizations.of(context);
@@ -462,48 +462,16 @@ class _DarkroomTimerPageState extends State<DarkroomTimerPage> {
   }
 
   String _recipeSubtitle(Map<String, dynamic> recipe, AppLocalizations l) {
-    final summary = _stepSummary(recipe, l);
     final baseTemp = recipe['baseTemp'] as num?;
-    final parts = <String>[summary];
+    final notes = recipe['notes'] as String? ?? '';
+    final parts = <String>[];
     if (baseTemp != null) {
       parts.add('${baseTemp.toStringAsFixed(1)}\u00b0C');
     }
-    final notes = recipe['notes'] as String? ?? '';
     if (notes.isNotEmpty) parts.add(notes);
     return parts.join(' \u2022 ');
   }
 
-  String _stepSummary(Map<String, dynamic> recipe, AppLocalizations l) {
-    final steps = (recipe['steps'] as List?) ?? [];
-    final devCount = steps.where((s) => s['type'] == 'develop').length;
-    final stopCount = steps.where((s) => s['type'] == 'stop').length;
-    final fixCount = steps.where((s) => s['type'] == 'fix').length;
-    final washCount = steps.where((s) => s['type'] == 'wash').length;
-    final rinseCount = steps.where((s) => s['type'] == 'rinse').length;
-    final parts = <String>[];
-    if (devCount > 0) {
-      parts.add('${l.t("recipe_step_develop")} \u00d7$devCount');
-    }
-    if (stopCount > 0) parts.add(l.t('recipe_step_stop'));
-    if (fixCount > 0) parts.add(l.t('recipe_step_fix'));
-    if (washCount > 1) {
-      parts.add('${l.t("recipe_step_wash")} \u00d7$washCount');
-    } else if (washCount == 1) {
-      parts.add(l.t('recipe_step_wash'));
-    }
-    if (rinseCount > 1) {
-      parts.add('${l.t("recipe_step_rinse")} \u00d7$rinseCount');
-    } else if (rinseCount == 1) {
-      parts.add(l.t('recipe_step_rinse'));
-    }
-    final customCount = steps.where((s) => s['type'] == 'custom').length;
-    if (customCount > 1) {
-      parts.add('${l.t("recipe_step_custom")} \u00d7$customCount');
-    } else if (customCount == 1) {
-      parts.add(l.t('recipe_step_custom'));
-    }
-    return parts.join(' \u2022 ');
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -515,7 +483,7 @@ class _DarkroomTimerPageState extends State<DarkroomTimerPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () =>
-              Navigator.pushReplacementNamed(context, '/'),
+              Navigator.pop(context),
         ),
         title: Text(l.t('darkroom_title')),
         actions: [
@@ -558,6 +526,7 @@ class _DarkroomTimerPageState extends State<DarkroomTimerPage> {
         ],
       ),
       drawer: const AppDrawer(),
+      drawerEnableOpenDragGesture: false,
       floatingActionButton: FloatingActionButton(
         onPressed: _createRecipe,
         child: const Icon(Icons.add),
@@ -635,7 +604,6 @@ class _DarkroomTimerPageState extends State<DarkroomTimerPage> {
                               itemCount: _filteredRecipes.length,
                               itemBuilder: (context, index) {
                                 final recipe = _filteredRecipes[index];
-                                final tags = _generateTags(recipe);
                                 return Card(
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
@@ -646,8 +614,6 @@ class _DarkroomTimerPageState extends State<DarkroomTimerPage> {
                                   child: InkWell(
                                     borderRadius: BorderRadius.circular(12),
                                     onTap: () => _startTimer(recipe),
-                                    onLongPress: () =>
-                                        _deleteRecipe(recipe),
                                     child: Padding(
                                       padding: const EdgeInsets.all(16),
                                       child: Row(
@@ -663,42 +629,6 @@ class _DarkroomTimerPageState extends State<DarkroomTimerPage> {
                                                       .textTheme
                                                       .titleSmall,
                                                 ),
-                                                if (tags.isNotEmpty) ...[
-                                                  const SizedBox(height: 6),
-                                                  Wrap(
-                                                    spacing: 4,
-                                                    runSpacing: 2,
-                                                    children: tags.entries
-                                                        .map((e) => Chip(
-                                                              label: Text(
-                                                                  e.value),
-                                                              labelStyle:
-                                                                  const TextStyle(
-                                                                      fontSize:
-                                                                          10),
-                                                              visualDensity:
-                                                                  const VisualDensity(
-                                                                      horizontal:
-                                                                          -4,
-                                                                      vertical:
-                                                                          -4),
-                                                              materialTapTargetSize:
-                                                                  MaterialTapTargetSize
-                                                                      .shrinkWrap,
-                                                              padding:
-                                                                  const EdgeInsets
-                                                                      .symmetric(
-                                                                      horizontal:
-                                                                          4),
-                                                              side: BorderSide
-                                                                  .none,
-                                                              backgroundColor:
-                                                                  colorScheme
-                                                                      .secondaryContainer,
-                                                            ))
-                                                        .toList(),
-                                                  ),
-                                                ],
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   _recipeSubtitle(

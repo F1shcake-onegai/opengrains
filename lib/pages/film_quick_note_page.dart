@@ -534,7 +534,7 @@ class _FilmQuickNotePageState extends State<FilmQuickNotePage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () =>
-              Navigator.pushReplacementNamed(context, '/'),
+              Navigator.pop(context),
         ),
         title: Text(l.t('film_title')),
         actions: [
@@ -575,6 +575,7 @@ class _FilmQuickNotePageState extends State<FilmQuickNotePage> {
         ],
       ),
       drawer: const AppDrawer(),
+      drawerEnableOpenDragGesture: false,
       floatingActionButton: FloatingActionButton(
         onPressed: _addRoll,
         child: const Icon(Icons.add),
@@ -656,7 +657,6 @@ class _FilmQuickNotePageState extends State<FilmQuickNotePage> {
                                 final roll = _filteredRolls[index];
                                 final shots =
                                     (roll['shots'] as List?) ?? [];
-                                final tags = _generateTags(roll);
                                 return Card(
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
@@ -698,47 +698,7 @@ class _FilmQuickNotePageState extends State<FilmQuickNotePage> {
                                                           .onSurfaceVariant)),
                                             ],
                                           ),
-                                          if (tags.isNotEmpty) ...[
-                                            const SizedBox(height: 6),
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.only(
-                                                      left: 36),
-                                              child: Wrap(
-                                                spacing: 4,
-                                                runSpacing: 2,
-                                                children: tags.entries
-                                                    .map((e) => Chip(
-                                                          label: Text(
-                                                              e.value),
-                                                          labelStyle:
-                                                              const TextStyle(
-                                                                  fontSize:
-                                                                      10),
-                                                          visualDensity:
-                                                              const VisualDensity(
-                                                                  horizontal:
-                                                                      -4,
-                                                                  vertical:
-                                                                      -4),
-                                                          materialTapTargetSize:
-                                                              MaterialTapTargetSize
-                                                                  .shrinkWrap,
-                                                          padding: const EdgeInsets
-                                                              .symmetric(
-                                                              horizontal:
-                                                                  4),
-                                                          side:
-                                                              BorderSide
-                                                                  .none,
-                                                          backgroundColor:
-                                                              colorScheme
-                                                                  .secondaryContainer,
-                                                        ))
-                                                    .toList(),
-                                              ),
-                                            ),
-                                          ],
+                                          // Tags are internal-only (used for search/filter, not displayed)
                                           const SizedBox(height: 4),
                                           Padding(
                                             padding:

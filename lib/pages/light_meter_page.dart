@@ -652,11 +652,12 @@ class _LightMeterPageState extends State<LightMeterPage>
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () =>
-              Navigator.pushReplacementNamed(context, '/'),
+              Navigator.pop(context),
         ),
         title: Text(l.t('lightmeter_title')),
       ),
       drawer: const AppDrawer(),
+      drawerEnableOpenDragGesture: false,
       body: Column(
         children: [
           // Camera preview

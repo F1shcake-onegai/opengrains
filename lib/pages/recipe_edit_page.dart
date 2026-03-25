@@ -80,6 +80,22 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
     setState(() => _steps.removeAt(index));
   }
 
+  void _moveStepUp(int index) {
+    if (index <= 0) return;
+    setState(() {
+      final step = _steps.removeAt(index);
+      _steps.insert(index - 1, step);
+    });
+  }
+
+  void _moveStepDown(int index) {
+    if (index >= _steps.length - 1) return;
+    setState(() {
+      final step = _steps.removeAt(index);
+      _steps.insert(index + 1, step);
+    });
+  }
+
   void _showAddStepSheet() {
     final l = AppLocalizations.of(context);
     showModalBottomSheet(
@@ -124,10 +140,10 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
     );
   }
 
-  void _save() {
+  Map<String, dynamic>? _buildRecipe() {
     final filmStock = _filmStockCtrl.text.trim();
-    if (filmStock.isEmpty) return;
-    final recipe = <String, dynamic>{
+    if (filmStock.isEmpty) return null;
+    return <String, dynamic>{
       'id': widget.existingRecipe?['id'] ??
           RecipeStorage.newUuid(),
       'createdAt': widget.existingRecipe?['createdAt'] ??
@@ -141,7 +157,34 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
       'redSafelight': _redSafelight,
       'steps': _steps,
     };
-    Navigator.pop(context, recipe);
+  }
+
+  void _autoSaveAndPop() {
+    Navigator.pop(context, _buildRecipe());
+  }
+
+  Future<void> _deleteRecipe() async {
+    final l = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.t('recipe_delete_title')),
+        content: Text(l.t('recipe_delete_message')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l.t('recipe_cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l.t('recipe_delete')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      Navigator.pop(context, {'_deleted': true, 'id': widget.existingRecipe?['id']});
+    }
   }
 
   Widget _buildTimeInput(int seconds, ValueChanged<int> onChanged) {
@@ -345,20 +388,26 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
     final colorScheme = Theme.of(context).colorScheme;
     final l = AppLocalizations.of(context);
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _autoSaveAndPop();
+      },
+      child: Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _autoSaveAndPop,
         ),
         title: Text(_isEditing
             ? l.t('recipe_edit_title')
             : l.t('recipe_new_title')),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: _filmStockCtrl.text.trim().isNotEmpty ? _save : null,
-          ),
+          if (_isEditing)
+            IconButton(
+              icon: Icon(Icons.delete_outline, color: colorScheme.error),
+              onPressed: _deleteRecipe,
+            ),
         ],
       ),
       body: SingleChildScrollView(
@@ -425,6 +474,7 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
                 DropdownMenuItem(value: 'bw_pos', child: Text(l.t('process_bw_pos'))),
                 DropdownMenuItem(value: 'color_neg', child: Text(l.t('process_color_neg'))),
                 DropdownMenuItem(value: 'color_pos', child: Text(l.t('process_color_pos'))),
+                DropdownMenuItem(value: 'paper', child: Text(l.t('process_paper'))),
               ],
               onChanged: (v) => setState(() => _processType = v ?? 'bw_neg'),
             ),
@@ -538,6 +588,34 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
                                   color: colorScheme.onSurface)),
                           const Spacer(),
                           IconButton(
+                            icon: Icon(Icons.arrow_drop_up,
+                                size: 20,
+                                color: i > 0
+                                    ? colorScheme.onSurfaceVariant
+                                    : colorScheme.onSurfaceVariant
+                                        .withAlpha(80)),
+                            onPressed: i > 0 ? () => _moveStepUp(i) : null,
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                                minWidth: 28, minHeight: 28),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.arrow_drop_down,
+                                size: 20,
+                                color: i < _steps.length - 1
+                                    ? colorScheme.onSurfaceVariant
+                                    : colorScheme.onSurfaceVariant
+                                        .withAlpha(80)),
+                            onPressed: i < _steps.length - 1
+                                ? () => _moveStepDown(i)
+                                : null,
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                                minWidth: 28, minHeight: 28),
+                          ),
+                          IconButton(
                             icon: Icon(Icons.delete_outline,
                                 size: 20, color: colorScheme.error),
                             onPressed: () => _removeStep(i),
@@ -599,6 +677,7 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
           ],
         ),
       ),
+    ),
     );
   }
 }

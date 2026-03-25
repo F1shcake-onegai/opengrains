@@ -169,11 +169,12 @@ class _ReciprocityCalculatorPageState
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () =>
-              Navigator.pushReplacementNamed(context, '/'),
+              Navigator.pop(context),
         ),
         title: Text(l.t('reciprocity_title')),
       ),
       drawer: const AppDrawer(),
+      drawerEnableOpenDragGesture: false,
       body: Column(
         children: [
           Expanded(
@@ -182,10 +183,6 @@ class _ReciprocityCalculatorPageState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(l.t('reciprocity_heading'),
-                      style:
-                          Theme.of(context).textTheme.headlineSmall),
-                  const SizedBox(height: 16),
 
                   // Film stock dropdown
                   Text(l.t('reciprocity_film_stock'),

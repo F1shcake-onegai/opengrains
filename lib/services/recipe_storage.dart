@@ -42,7 +42,7 @@ class RecipeStorage {
       {
         'id': _uuid.v4(),
         'createdAt': DateTime.now().millisecondsSinceEpoch,
-        'filmStock': 'C-41',
+        'filmStock': 'Color Negative',
         'developer': 'C-41',
         'dilution': '',
         'processType': 'color_neg',
@@ -65,7 +65,7 @@ class RecipeStorage {
       {
         'id': _uuid.v4(),
         'createdAt': DateTime.now().millisecondsSinceEpoch,
-        'filmStock': 'E-6',
+        'filmStock': 'Color Reversal',
         'developer': 'E-6',
         'dilution': '',
         'processType': 'color_pos',

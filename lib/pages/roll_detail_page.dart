@@ -461,11 +461,15 @@ class _RollDetailPageState extends State<RollDetailPage> {
                               setState(() => _ec = 0.0);
                               _onFieldChanged();
                             },
-                            child: Text(_ecLabel,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.bold)),
+                            child: SizedBox(
+                              width: 56,
+                              child: Text(_ecLabel,
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold)),
+                            ),
                           ),
                           const SizedBox(width: 4),
                           Expanded(
