@@ -2,7 +2,7 @@ import Flutter
 import UIKit
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
     private var fileIntentChannel: FlutterMethodChannel?
     var eventSink: FlutterEventSink?
     var initialFilePath: String?
@@ -11,11 +11,22 @@ import UIKit
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        let controller = window?.rootViewController as! FlutterViewController
+        // Handle cold start URL from launchOptions
+        if let url = launchOptions?[.url] as? URL {
+            handleIncomingFile(url: url)
+        }
+        return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    }
+
+    func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+        GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+
+        guard let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FileIntentPlugin") else { return }
+        let messenger = registrar.messenger()
 
         fileIntentChannel = FlutterMethodChannel(
             name: "photography_toolbox/file_intent",
-            binaryMessenger: controller.binaryMessenger
+            binaryMessenger: messenger
         )
         fileIntentChannel?.setMethodCallHandler { [weak self] call, result in
             if call.method == "getInitialFile" {
@@ -28,17 +39,9 @@ import UIKit
 
         let eventChannel = FlutterEventChannel(
             name: "photography_toolbox/file_intent/events",
-            binaryMessenger: controller.binaryMessenger
+            binaryMessenger: messenger
         )
         eventChannel.setStreamHandler(FileIntentStreamHandler(delegate: self))
-
-        // Handle cold start URL from launchOptions
-        if let url = launchOptions?[.url] as? URL {
-            handleIncomingFile(url: url)
-        }
-
-        GeneratedPluginRegistrant.register(with: self)
-        return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
 
     override func application(
