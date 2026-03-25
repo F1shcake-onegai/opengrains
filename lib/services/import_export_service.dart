@@ -39,7 +39,7 @@ class ImportExportService {
 
   /// Export a recipe to a .ptrecipe file. Returns the file path.
   static Future<String> exportRecipe(Map<String, dynamic> recipe) async {
-    final dir = await getApplicationDocumentsDirectory();
+    final dir = await getTemporaryDirectory();
     final filmStock = recipe['filmStock'] as String? ?? 'recipe';
     final safeName = filmStock
         .replaceAll(RegExp(r'[^\w\s-]'), '')
@@ -61,7 +61,7 @@ class ImportExportService {
     Map<String, dynamic> roll, {
     List<String>? selectedShotUuids,
   }) async {
-    final dir = await getApplicationDocumentsDirectory();
+    final dir = await getTemporaryDirectory();
     final brand = roll['brand'] as String? ?? '';
     final model = roll['model'] as String? ?? 'roll';
     final safeName = '$brand $model'
@@ -342,7 +342,10 @@ class ImportExportService {
         await File(exportedPath).copy(savePath);
       }
     } else {
-      await Share.shareXFiles([XFile(exportedPath)], text: displayName);
+      await Share.shareXFiles(
+        [XFile(exportedPath)],
+        subject: displayName,
+      );
     }
   }
 

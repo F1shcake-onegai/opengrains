@@ -415,12 +415,13 @@ class _RollDetailPageState extends State<RollDetailPage> {
               ),
             ),
             const SizedBox(height: 12),
-            // ISO & Exposure Compensation side by side
+            // ISO & Exposure Compensation side by side (1:3 ratio)
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ISO (half width)
-                Expanded(
+                // ISO (1/4 width)
+                Flexible(
+                  flex: 1,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -442,8 +443,9 @@ class _RollDetailPageState extends State<RollDetailPage> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Exposure Compensation (half width)
-                Expanded(
+                // Exposure Compensation (3/4 width)
+                Flexible(
+                  flex: 3,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -454,11 +456,17 @@ class _RollDetailPageState extends State<RollDetailPage> {
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          Text(_ecLabel,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold)),
+                          GestureDetector(
+                            onDoubleTap: () {
+                              setState(() => _ec = 0.0);
+                              _onFieldChanged();
+                            },
+                            child: Text(_ecLabel,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold)),
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Slider(
