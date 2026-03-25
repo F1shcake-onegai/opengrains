@@ -277,12 +277,19 @@ class _DarkroomTimerPageState extends State<DarkroomTimerPage> {
   }
 
 
+  Rect _shareOrigin() {
+    final box = context.findRenderObject() as RenderBox?;
+    final size = box?.size ?? Size.zero;
+    final origin = box?.localToGlobal(Offset.zero) ?? Offset.zero;
+    return origin & size;
+  }
+
   Future<void> _shareRecipe(Map<String, dynamic> recipe) async {
     final l = AppLocalizations.of(context);
     try {
       final path = await RecipeStorage.exportRecipe(recipe);
       final shareText = recipe['filmStock'] as String? ?? 'Recipe';
-      await ImportExportService.shareFile(path, shareText);
+      await ImportExportService.shareFile(path, shareText, sharePositionOrigin: _shareOrigin());
     } catch (e, stack) {
       ErrorLog.log('Recipe Export', e, stack);
       if (mounted) {

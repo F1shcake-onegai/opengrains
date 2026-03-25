@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import '../services/developer_settings.dart';
 import '../services/error_log.dart';
 import '../services/app_localizations.dart';
@@ -12,6 +14,8 @@ class DeveloperPage extends StatefulWidget {
 
 class _DeveloperPageState extends State<DeveloperPage> {
   bool _verbose = DeveloperSettings.verbose;
+  int _logCap = DeveloperSettings.logCap;
+  int _logAgeDays = DeveloperSettings.logAgeDays;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +46,62 @@ class _DeveloperPageState extends State<DeveloperPage> {
                 setState(() => _verbose = v);
               },
             ),
-            const SizedBox(height: 8),
+            const Divider(),
+
+            // Log cap
+            ListTile(
+              title: Text(l.t('dev_log_cap')),
+              subtitle: Text(l.t('dev_log_cap_desc'),
+                  style: TextStyle(
+                      fontSize: 12, color: colorScheme.onSurfaceVariant)),
+              trailing: SizedBox(
+                width: 120,
+                child: DropdownButton<int>(
+                  value: _logCap,
+                  isExpanded: true,
+                  underline: const SizedBox.shrink(),
+                  items: DeveloperSettings.logCapOptions
+                      .map((v) => DropdownMenuItem(
+                          value: v, child: Text('$v')))
+                      .toList(),
+                  onChanged: (v) async {
+                    if (v != null) {
+                      await DeveloperSettings.setLogCap(v);
+                      setState(() => _logCap = v);
+                    }
+                  },
+                ),
+              ),
+            ),
+
+            // Log age
+            ListTile(
+              title: Text(l.t('dev_log_age')),
+              subtitle: Text(l.t('dev_log_age_desc'),
+                  style: TextStyle(
+                      fontSize: 12, color: colorScheme.onSurfaceVariant)),
+              trailing: SizedBox(
+                width: 120,
+                child: DropdownButton<int>(
+                  value: _logAgeDays,
+                  isExpanded: true,
+                  underline: const SizedBox.shrink(),
+                  items: DeveloperSettings.logAgeOptions
+                      .map((v) => DropdownMenuItem(
+                          value: v,
+                          child: Text(DeveloperSettings.logAgeLabel(v))))
+                      .toList(),
+                  onChanged: (v) async {
+                    if (v != null) {
+                      await DeveloperSettings.setLogAgeDays(v);
+                      setState(() => _logAgeDays = v);
+                    }
+                  },
+                ),
+              ),
+            ),
+            const Divider(),
+
             ListTile(
               leading: const Icon(Icons.bug_report_outlined),
               title: Text(l.t('dev_error_logs')),
@@ -74,6 +133,79 @@ class _ErrorLogListPage extends StatefulWidget {
 }
 
 class _ErrorLogListPageState extends State<_ErrorLogListPage> {
+  Future<void> _exportLogs() async {
+    final l = AppLocalizations.of(context);
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = box != null
+        ? (box.localToGlobal(Offset.zero) & box.size)
+        : Rect.zero;
+    try {
+      final path = await ErrorLog.exportLog();
+      await Share.shareXFiles([XFile(path)],
+          sharePositionOrigin: origin);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l.t('export_error'))),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmClearAll() async {
+    final l = AppLocalizations.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.t('dev_clear_logs')),
+        content: Text(l.t('dev_clear_logs_confirm')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l.t('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l.t('dev_clear'),
+                style: TextStyle(color: colorScheme.error)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ErrorLog.clear();
+      setState(() {});
+    }
+  }
+
+  Future<void> _confirmDeleteEntry(ErrorEntry entry) async {
+    final l = AppLocalizations.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.t('dev_delete_entry')),
+        content: Text(l.t('dev_delete_entry_confirm')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l.t('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l.t('dev_delete'),
+                style: TextStyle(color: colorScheme.error)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ErrorLog.deleteEntry(entry);
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -86,35 +218,15 @@ class _ErrorLogListPageState extends State<_ErrorLogListPage> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(l.t('dev_error_logs')),
+        title: GestureDetector(
+          onLongPress: entries.isNotEmpty ? _confirmClearAll : null,
+          child: Text(l.t('dev_error_logs')),
+        ),
         actions: [
           if (entries.isNotEmpty)
             IconButton(
-              icon: Icon(Icons.delete_outline, color: colorScheme.error),
-              onPressed: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: Text(l.t('dev_clear_logs')),
-                    content: Text(l.t('dev_clear_logs_confirm')),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: Text(l.t('cancel')),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: Text(l.t('dev_clear'),
-                            style: TextStyle(color: colorScheme.error)),
-                      ),
-                    ],
-                  ),
-                );
-                if (confirmed == true) {
-                  await ErrorLog.clear();
-                  setState(() {});
-                }
-              },
+              icon: const Icon(Icons.ios_share),
+              onPressed: _exportLogs,
             ),
         ],
       ),
@@ -152,7 +264,8 @@ class _ErrorLogListPageState extends State<_ErrorLogListPage> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => _ErrorDetailPage(entry: entry)),
-                  ),
+                  ).then((_) => setState(() {})),
+                  onLongPress: () => _confirmDeleteEntry(entry),
                 );
               },
             ),
@@ -164,6 +277,14 @@ class _ErrorDetailPage extends StatelessWidget {
   final ErrorEntry entry;
 
   const _ErrorDetailPage({required this.entry});
+
+  void _copyToClipboard(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    Clipboard.setData(ClipboardData(text: entry.toDisplayString()));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l.t('dev_copied'))),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -183,6 +304,12 @@ class _ErrorDetailPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(l.t('dev_error_detail')),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.copy),
+            onPressed: () => _copyToClipboard(context),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

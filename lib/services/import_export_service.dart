@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -334,7 +335,7 @@ class ImportExportService {
 
   /// Share an exported file. On desktop, opens a "Save As" dialog.
   /// On mobile, opens the native share sheet.
-  static Future<void> shareFile(String exportedPath, String displayName) async {
+  static Future<void> shareFile(String exportedPath, String displayName, {Rect? sharePositionOrigin}) async {
     if (_isDesktop) {
       final ext = exportedPath.contains(rollExtension) ? 'ptroll' : 'ptrecipe';
       final savePath = await FilePicker.platform.saveFile(
@@ -348,6 +349,7 @@ class ImportExportService {
       await Share.shareXFiles(
         [XFile(exportedPath)],
         subject: displayName,
+        sharePositionOrigin: sharePositionOrigin,
       );
     }
   }

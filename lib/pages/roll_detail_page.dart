@@ -200,16 +200,24 @@ class _RollDetailPageState extends State<RollDetailPage> {
   }
 
 
+  Rect _shareOrigin() {
+    final box = context.findRenderObject() as RenderBox?;
+    final size = box?.size ?? Size.zero;
+    final origin = box?.localToGlobal(Offset.zero) ?? Offset.zero;
+    return origin & size;
+  }
+
   Future<void> _shareRoll() async {
     if (_roll == null) return;
     final l = AppLocalizations.of(context);
+    final shareOrigin = _shareOrigin();
     final shots = _shots;
     if (shots.isEmpty) {
       // No shots — export roll without shot selection
       try {
         final path = await FilmStorage.exportRoll(_roll!);
         final name = '${_roll!['brand']} ${_roll!['model']}'.trim();
-        await ImportExportService.shareFile(path, name);
+        await ImportExportService.shareFile(path, name, sharePositionOrigin: shareOrigin);
       } catch (e, stack) {
         ErrorLog.log('Roll Export', e, stack);
         if (mounted) {
@@ -322,7 +330,7 @@ class _RollDetailPageState extends State<RollDetailPage> {
       final path = await FilmStorage.exportRoll(_roll!,
           selectedShotUuids: confirmed.toList());
       final name = '${_roll!['brand']} ${_roll!['model']}'.trim();
-      await ImportExportService.shareFile(path, name);
+      await ImportExportService.shareFile(path, name, sharePositionOrigin: shareOrigin);
     } catch (e, stack) {
       ErrorLog.log('Roll Export', e, stack);
       if (mounted) {

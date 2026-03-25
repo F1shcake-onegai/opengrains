@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'developer_settings.dart';
 
 class ErrorEntry {
   final DateTime timestamp;
@@ -28,11 +29,24 @@ class ErrorEntry {
         message: json['message'] as String,
         stackTrace: json['stackTrace'] as String?,
       );
+
+  String toDisplayString() {
+    final buf = StringBuffer();
+    buf.writeln('Time: ${timestamp.toIso8601String()}');
+    buf.writeln('Source: $source');
+    buf.writeln('Error: $message');
+    if (stackTrace != null) {
+      buf.writeln('Stack Trace:');
+      buf.write(stackTrace);
+    }
+    return buf.toString();
+  }
 }
 
 class ErrorLog {
   static final List<ErrorEntry> _entries = [];
   static bool _loaded = false;
+  static DateTime? _lastAgePrune;
 
   static List<ErrorEntry> get entries => List.unmodifiable(_entries);
 
@@ -67,12 +81,68 @@ class ErrorLog {
       stackTrace: stack?.toString(),
     );
     _entries.add(entry);
+    _pruneByCount();
+    _pruneByAgeIfNeeded();
     await _save();
+  }
+
+  /// Remove oldest entries exceeding the cap.
+  static void _pruneByCount() {
+    final cap = DeveloperSettings.logCap;
+    if (_entries.length > cap) {
+      _entries.removeRange(0, _entries.length - cap);
+    }
+  }
+
+  /// Remove entries older than the age limit, at most once per day.
+  static void _pruneByAgeIfNeeded() {
+    final now = DateTime.now();
+    if (_lastAgePrune != null &&
+        now.difference(_lastAgePrune!).inHours < 24) {
+      return;
+    }
+    _lastAgePrune = now;
+    final cutoff = now.subtract(Duration(days: DeveloperSettings.logAgeDays));
+    _entries.removeWhere((e) => e.timestamp.isBefore(cutoff));
   }
 
   static Future<void> clear() async {
     _entries.clear();
     await _save();
+  }
+
+  static Future<void> deleteEntry(ErrorEntry entry) async {
+    _entries.remove(entry);
+    await _save();
+  }
+
+  /// Export all entries as a .log text file. Returns the file path.
+  static Future<String> exportLog() async {
+    final dir = await getTemporaryDirectory();
+    final now = DateTime.now();
+    final date = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+
+    // Collect unique sources
+    final sources = _entries.map((e) => e.source).toSet();
+    final sourceStr = sources.length <= 3
+        ? sources.join('_').replaceAll(RegExp(r'[^\w]'), '')
+        : '${sources.length}sources';
+
+    final fileName = '${date}_$sourceStr.log';
+    final file = File('${dir.path}/$fileName');
+
+    final buf = StringBuffer();
+    buf.writeln('Photography Toolbox Error Log');
+    buf.writeln('Exported: ${now.toIso8601String()}');
+    buf.writeln('Entries: ${_entries.length}');
+    buf.writeln('=' * 60);
+    for (final entry in _entries) {
+      buf.writeln();
+      buf.writeln(entry.toDisplayString());
+      buf.writeln('-' * 40);
+    }
+    await file.writeAsString(buf.toString());
+    return file.path;
   }
 
   static Future<void> _save() async {
