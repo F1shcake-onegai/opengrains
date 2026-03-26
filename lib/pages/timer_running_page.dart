@@ -447,15 +447,43 @@ class _TimerRunningPageState extends State<TimerRunningPage>
     );
   }
 
-  String _recipeTitle() {
+  Widget _buildRecipeInfo(ColorScheme cs) {
     final r = widget.recipe;
     final filmStock = r['filmStock'] as String? ?? '';
     final developer = r['developer'] as String? ?? '';
     final dilution = r['dilution'] as String? ?? '';
-    final parts = <String>[filmStock];
-    if (developer.isNotEmpty) parts.add(developer);
-    if (dilution.isNotEmpty) parts.add(dilution);
-    return parts.join(' \u2022 ');
+    final lines = <(IconData, String)>[
+      if (filmStock.isNotEmpty) (Icons.camera_roll_outlined, filmStock),
+      if (developer.isNotEmpty) (Icons.science_outlined, developer),
+      if (dilution.isNotEmpty) (Icons.opacity, dilution),
+    ];
+    if (lines.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final (icon, text) in lines)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Row(
+                children: [
+                  Icon(icon, size: 14, color: cs.onSurfaceVariant),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      text,
+                      style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   String _stepDisplayLabel(int index, AppLocalizations l) {
@@ -714,7 +742,7 @@ class _TimerRunningPageState extends State<TimerRunningPage>
                 }
               },
             ),
-            title: Text(_recipeTitle(),
+            title: Text(l.t('timer_title'),
                 style: TextStyle(color: cs.onSurface)),
             backgroundColor: appBarBg ?? Colors.transparent,
             foregroundColor: cs.onSurface,
@@ -750,14 +778,19 @@ class _TimerRunningPageState extends State<TimerRunningPage>
                               color: cs.onSurfaceVariant)),
                       const SizedBox(width: 12),
                       SizedBox(
-                        width: 80,
+                        width: 100,
                         child: TextField(
                           controller: _tempCtrl,
                           keyboardType:
                               const TextInputType.numberWithOptions(
                                   decimal: true),
-                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                          maxLength: 5,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                            LengthLimitingTextInputFormatter(5),
+                          ],
                           decoration: InputDecoration(
+                            counterText: '',
                             suffixText: '\u00b0C',
                             suffixStyle:
                                 TextStyle(color: cs.onSurfaceVariant),
@@ -790,6 +823,9 @@ class _TimerRunningPageState extends State<TimerRunningPage>
                 ),
               ),
 
+              // Recipe info
+              const SizedBox(height: 8),
+              _buildRecipeInfo(cs),
               const SizedBox(height: 8),
 
               // Step roll

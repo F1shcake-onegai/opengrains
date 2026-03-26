@@ -17,6 +17,33 @@ class _DeveloperPageState extends State<DeveloperPage> {
   int _logCap = DeveloperSettings.logCap;
   int _logAgeDays = DeveloperSettings.logAgeDays;
 
+  Future<void> _confirmClearAll(BuildContext context) async {
+    final l = AppLocalizations.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.t('dev_clear_logs')),
+        content: Text(l.t('dev_clear_logs_confirm')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l.t('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l.t('dev_clear'),
+                style: TextStyle(color: colorScheme.error)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ErrorLog.clear();
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -117,6 +144,9 @@ class _DeveloperPageState extends State<DeveloperPage> {
                 MaterialPageRoute(
                     builder: (_) => const _ErrorLogListPage()),
               ).then((_) => setState(() {})),
+              onLongPress: ErrorLog.entries.isNotEmpty
+                  ? () => _confirmClearAll(context)
+                  : null,
             ),
           ],
         ),
@@ -149,33 +179,6 @@ class _ErrorLogListPageState extends State<_ErrorLogListPage> {
           SnackBar(content: Text(l.t('export_error'))),
         );
       }
-    }
-  }
-
-  Future<void> _confirmClearAll() async {
-    final l = AppLocalizations.of(context);
-    final colorScheme = Theme.of(context).colorScheme;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l.t('dev_clear_logs')),
-        content: Text(l.t('dev_clear_logs_confirm')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l.t('cancel')),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l.t('dev_clear'),
-                style: TextStyle(color: colorScheme.error)),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await ErrorLog.clear();
-      setState(() {});
     }
   }
 
@@ -218,10 +221,7 @@ class _ErrorLogListPageState extends State<_ErrorLogListPage> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: GestureDetector(
-          onLongPress: entries.isNotEmpty ? _confirmClearAll : null,
-          child: Text(l.t('dev_error_logs')),
-        ),
+        title: Text(l.t('dev_error_logs')),
         actions: [
           if (entries.isNotEmpty)
             IconButton(

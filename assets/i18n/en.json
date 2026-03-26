@@ -192,6 +192,7 @@
   "recipe_valid_time": "Total time must be greater than 0.",
   "recipe_valid_ok": "OK",
 
+  "timer_title": "Darkroom Timer",
   "timer_actual_temp": "Actual Temp",
   "timer_base": "Base",
   "timer_start": "Start",

@@ -191,6 +191,7 @@
   "recipe_valid_time": "总时间必须大于0。",
   "recipe_valid_ok": "OK",
 
+  "timer_title": "暗房计时器",
   "timer_actual_temp": "实际温度",
   "timer_base": "基准",
   "timer_start": "开始",

@@ -214,7 +214,9 @@ class _FlashCalculatorPageState extends State<FlashCalculatorPage> {
                   // Guide Number - text field
                   _labeledTextField(
                       l.t('flash_guide_number'), _gnController,
-                      hint: l.t('flash_guide_number_hint')),
+                      hint: l.t('flash_guide_number_hint'),
+                      maxLength: 3,
+                      allowDecimal: false),
                   const SizedBox(height: 16),
 
                   // F-stop / Aperture - slider
@@ -376,7 +378,9 @@ class _FlashCalculatorPageState extends State<FlashCalculatorPage> {
                   // ISO - text field
                   _labeledTextField(
                       l.t('flash_iso'), _isoController,
-                      hint: l.t('flash_iso_hint')),
+                      hint: l.t('flash_iso_hint'),
+                      maxLength: 4,
+                      allowDecimal: false),
                   const SizedBox(height: 16),
 
                 ],
@@ -448,7 +452,7 @@ class _FlashCalculatorPageState extends State<FlashCalculatorPage> {
 
   Widget _labeledTextField(String label,
       TextEditingController controller,
-      {String? hint}) {
+      {String? hint, int? maxLength, bool allowDecimal = true}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -465,12 +469,19 @@ class _FlashCalculatorPageState extends State<FlashCalculatorPage> {
           },
           child: TextField(
             controller: controller,
-            keyboardType: const TextInputType.numberWithOptions(
-                decimal: true),
-            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+            keyboardType: TextInputType.numberWithOptions(
+                decimal: allowDecimal),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(
+                  RegExp(allowDecimal ? r'[0-9.]' : r'[0-9]')),
+              if (maxLength != null)
+                LengthLimitingTextInputFormatter(maxLength),
+            ],
             decoration: InputDecoration(
                 hintText: hint,
-                border: const OutlineInputBorder()),
+                border: const OutlineInputBorder(),
+                counterText: ''),
+            maxLength: maxLength,
             onChanged: (_) => setState(() {}),
           ),
         ),

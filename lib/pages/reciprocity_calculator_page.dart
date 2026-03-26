@@ -268,14 +268,19 @@ class _ReciprocityCalculatorPageState
                     },
                     child: TextField(
                       controller: _exactTimeCtrl,
+                      maxLength: 6,
                       keyboardType:
                           const TextInputType.numberWithOptions(
                               decimal: true),
-                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                        LengthLimitingTextInputFormatter(6),
+                      ],
                       decoration: InputDecoration(
                         hintText: _formatSliderTime(
                             _meteredTimes[_meteredTimeIndex]),
                         border: const OutlineInputBorder(),
+                        counterText: '',
                       ),
                       onChanged: (_) => setState(() {}),
                     ),

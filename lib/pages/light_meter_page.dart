@@ -372,16 +372,21 @@ class _LightMeterPageState extends State<LightMeterPage>
                           fontSize: 12, color: cs.onSurfaceVariant)),
                   const SizedBox(width: 8),
                   SizedBox(
-                    width: 80,
+                    width: 100,
                     child: TextField(
                       controller: _manualEvCtrl,
+                      maxLength: 6,
                       keyboardType: const TextInputType.numberWithOptions(
                           decimal: true, signed: true),
-                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.\-]'))],
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.\-]')),
+                        LengthLimitingTextInputFormatter(6),
+                      ],
                       textAlign: TextAlign.center,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                         isDense: true,
+                        counterText: '',
                       ),
                       onChanged: (v) {
                         final ev = double.tryParse(v);

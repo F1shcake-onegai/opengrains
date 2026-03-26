@@ -65,10 +65,8 @@ class _FilmQuickNotePageState extends State<FilmQuickNotePage> {
   static Map<String, String> _generateTags(Map<String, dynamic> roll) {
     final tags = <String, String>{};
     final brand = roll['brand'] as String? ?? '';
-    final model = roll['model'] as String? ?? '';
     final sensitivity = roll['sensitivity'] as String? ?? '';
     if (brand.isNotEmpty) tags['brand'] = brand;
-    if (model.isNotEmpty) tags['model'] = model;
     if (sensitivity.isNotEmpty) tags['iso'] = 'ISO $sensitivity';
     final ec = (roll['ec'] as num?)?.toDouble() ?? 0.0;
     tags['ec'] = ec != 0.0 ? 'yes' : 'no';
@@ -101,10 +99,9 @@ class _FilmQuickNotePageState extends State<FilmQuickNotePage> {
   }
 
   List<FilterField> _buildFilterFields(AppLocalizations l) {
-    final categories = ['brand', 'model', 'iso', 'ec'];
+    final categories = ['brand', 'iso', 'ec'];
     final labels = {
       'brand': l.t('tag_brand'),
-      'model': l.t('tag_model'),
       'iso': l.t('tag_iso'),
       'ec': l.t('tag_ec'),
     };
@@ -280,12 +277,17 @@ class _FilmQuickNotePageState extends State<FilmQuickNotePage> {
             const SizedBox(height: 12),
             TextField(
               controller: isoCtrl,
+              maxLength: 4,
               keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(4),
+              ],
               decoration: InputDecoration(
                 labelText: l.t('film_sensitivity'),
                 hintText: l.t('film_sensitivity_hint'),
                 border: OutlineInputBorder(),
+                counterText: '',
               ),
             ),
           ],

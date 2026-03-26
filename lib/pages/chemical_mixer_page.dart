@@ -30,8 +30,8 @@ class _ChemicalMixerPageState extends State<ChemicalMixerPage> {
 
   void _parseDilution(String raw) {
     // Extract numeric pattern like 1+50 or 1:25 or 1+1+100
-    final plusMatch = RegExp(r'(\d+(?:\+\d+)+)').firstMatch(raw);
-    final colonMatch = RegExp(r'(\d+(?::\d+)+)').firstMatch(raw);
+    final plusMatch = RegExp(r'(\d+(?:\s*\+\s*\d+)+)').firstMatch(raw);
+    final colonMatch = RegExp(r'(\d+(?:\s*:\s*\d+)+)').firstMatch(raw);
 
     String? matched;
     if (plusMatch != null) {
@@ -43,8 +43,9 @@ class _ChemicalMixerPageState extends State<ChemicalMixerPage> {
     }
 
     if (matched != null) {
+      final cleaned = matched.replaceAll(' ', '');
       final sep = _usePlus ? '+' : ':';
-      final parts = matched.split(sep);
+      final parts = cleaned.split(sep);
       for (final p in parts) {
         _partCtrls.add(TextEditingController(text: p));
       }

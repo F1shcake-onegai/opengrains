@@ -72,7 +72,18 @@ class _DarkroomTimerPageState extends State<DarkroomTimerPage> {
     tags['process'] = _processLabel(processType);
     if (developer.isNotEmpty) tags['developer'] = developer;
     if (filmStock.isNotEmpty) tags['film'] = filmStock;
-    if (dilution.isNotEmpty) tags['dilution'] = dilution;
+    if (dilution.isNotEmpty) {
+      // Extract numeric pattern like 1+50 or 1 + 50 or 1:25 (same logic as chemical mixer)
+      final plusMatch = RegExp(r'(\d+(?:\s*\+\s*\d+)+)').firstMatch(dilution);
+      final colonMatch = RegExp(r'(\d+(?:\s*:\s*\d+)+)').firstMatch(dilution);
+      if (plusMatch != null) {
+        tags['dilution'] = plusMatch.group(1)!.replaceAll(' ', '');
+      } else if (colonMatch != null) {
+        tags['dilution'] = colonMatch.group(1)!.replaceAll(' ', '');
+      } else {
+        tags['dilution'] = dilution;
+      }
+    }
     return tags;
   }
 

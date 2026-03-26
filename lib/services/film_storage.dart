@@ -179,8 +179,12 @@ class FilmStorage {
 
       final tempPath = images[archivePath];
       if (tempPath != null && File(tempPath).existsSync()) {
-        final shotUuid = shot['uuid'] as String? ?? _uuid.v4();
-        shot['uuid'] ??= shotUuid;
+        var shotUuid = shot['uuid'] as String? ?? _uuid.v4();
+        // Sanitize uuid to prevent path traversal
+        if (!RegExp(r'^[a-fA-F0-9\-]+$').hasMatch(shotUuid)) {
+          shotUuid = _uuid.v4();
+        }
+        shot['uuid'] = shotUuid;
         final destName = '$shotUuid.jpg';
         await File(tempPath).copy('$imgDirPath/$destName');
         shot['imagePath'] = destName;

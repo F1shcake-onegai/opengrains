@@ -206,9 +206,17 @@ class ImportExportService {
 
       final images = <String, String>{};
       final smallImages = <String, String>{};
+      int skippedUnsafe = 0;
       for (final entry in archive.files) {
         if (entry.name.startsWith('images/') && entry.isFile) {
           final fileName = entry.name.replaceFirst('images/', '');
+          // Reject path traversal attempts
+          if (fileName.contains('..') ||
+              fileName.contains('/') ||
+              fileName.contains('\\')) {
+            skippedUnsafe++;
+            continue;
+          }
           final content = entry.content as List<int>;
           final outFile = File('${importTempDir.path}/$fileName');
           await outFile.writeAsBytes(content);
@@ -223,6 +231,10 @@ class ImportExportService {
             }
           }
         }
+      }
+      if (skippedUnsafe > 0) {
+        throw const FormatException(
+            'Archive contains unsafe file paths and cannot be imported.');
       }
 
       return ImportParseResult(

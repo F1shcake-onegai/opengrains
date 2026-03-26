@@ -159,7 +159,9 @@ class _DofCalculatorPageState extends State<DofCalculatorPage> {
                   // Focal Length - input box
                   _labeledTextField(l.t('dof_focal_length'),
                       _focalLengthController,
-                      hint: l.t('dof_focal_length_hint')),
+                      hint: l.t('dof_focal_length_hint'),
+                      maxLength: 4,
+                      allowDecimal: false),
                   const SizedBox(height: 16),
 
                   // Aperture - slider
@@ -275,7 +277,8 @@ class _DofCalculatorPageState extends State<DofCalculatorPage> {
                   // Circle of Confusion - input box with default
                   _labeledTextField(
                       l.t('dof_coc'), _cocController,
-                      hint: l.t('dof_coc_hint')),
+                      hint: l.t('dof_coc_hint'),
+                      maxLength: 6),
 
                   const SizedBox(height: 16),
 
@@ -370,7 +373,7 @@ class _DofCalculatorPageState extends State<DofCalculatorPage> {
 
   Widget _labeledTextField(String label,
       TextEditingController controller,
-      {String? hint}) {
+      {String? hint, int? maxLength, bool allowDecimal = true}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -387,12 +390,19 @@ class _DofCalculatorPageState extends State<DofCalculatorPage> {
           },
           child: TextField(
             controller: controller,
-            keyboardType: const TextInputType.numberWithOptions(
-                decimal: true),
-            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+            keyboardType: TextInputType.numberWithOptions(
+                decimal: allowDecimal),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(
+                  RegExp(allowDecimal ? r'[0-9.]' : r'[0-9]')),
+              if (maxLength != null)
+                LengthLimitingTextInputFormatter(maxLength),
+            ],
             decoration: InputDecoration(
                 hintText: hint,
-                border: const OutlineInputBorder()),
+                border: const OutlineInputBorder(),
+                counterText: ''),
+            maxLength: maxLength,
             onChanged: (_) => setState(() {}),
           ),
         ),

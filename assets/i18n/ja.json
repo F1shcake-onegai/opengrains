@@ -191,6 +191,7 @@
   "recipe_valid_time": "合計時間は0より大きい必要があります。",
   "recipe_valid_ok": "OK",
 
+  "timer_title": "暗室タイマー",
   "timer_actual_temp": "実際の温度",
   "timer_base": "基準",
   "timer_start": "開始",
