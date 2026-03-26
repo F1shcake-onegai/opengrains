@@ -477,25 +477,56 @@ class _DarkroomTimerPageState extends State<DarkroomTimerPage> {
     );
   }
 
-  String _recipeTitle(Map<String, dynamic> recipe) {
+  Widget _buildRecipeTitles(
+      BuildContext context, Map<String, dynamic> recipe, ColorScheme cs) {
     final filmStock = recipe['filmStock'] as String? ?? '';
     final developer = recipe['developer'] as String? ?? '';
     final dilution = recipe['dilution'] as String? ?? '';
-    final parts = <String>[filmStock];
-    if (developer.isNotEmpty) parts.add(developer);
-    if (dilution.isNotEmpty) parts.add(dilution);
-    return parts.join(' \u2022 ');
-  }
-
-  String _recipeSubtitle(Map<String, dynamic> recipe, AppLocalizations l) {
     final baseTemp = recipe['baseTemp'] as num?;
-    final notes = recipe['notes'] as String? ?? '';
-    final parts = <String>[];
-    if (baseTemp != null) {
-      parts.add('${baseTemp.toStringAsFixed(1)}\u00b0C');
+    final titleStyle = Theme.of(context).textTheme.titleSmall!;
+    const iconSize = 16.0;
+    final iconColor = cs.onSurfaceVariant;
+
+    String developerLine = developer;
+    if (developer.isNotEmpty && baseTemp != null) {
+      developerLine = '$developer @ ${baseTemp.toStringAsFixed(1)}\u00b0C';
     }
-    if (notes.isNotEmpty) parts.add(notes);
-    return parts.join(' \u2022 ');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.camera_roll_outlined, size: iconSize, color: iconColor),
+            const SizedBox(width: 6),
+            Expanded(child: Text(
+              filmStock.isNotEmpty ? filmStock : '—',
+              style: titleStyle,
+            )),
+          ],
+        ),
+        if (developerLine.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(Icons.science_outlined, size: iconSize, color: iconColor),
+              const SizedBox(width: 6),
+              Expanded(child: Text(developerLine, style: titleStyle)),
+            ],
+          ),
+        ],
+        if (dilution.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(Icons.water_drop_outlined, size: iconSize, color: iconColor),
+              const SizedBox(width: 6),
+              Expanded(child: Text(dilution, style: titleStyle)),
+            ],
+          ),
+        ],
+      ],
+    );
   }
 
 
@@ -642,60 +673,63 @@ class _DarkroomTimerPageState extends State<DarkroomTimerPage> {
                                     onTap: () => _startTimer(recipe),
                                     child: Padding(
                                       padding: const EdgeInsets.all(16),
-                                      child: Row(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  _recipeTitle(recipe),
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .titleSmall,
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  _recipeSubtitle(
-                                                      recipe, l),
-                                                  style: TextStyle(
-                                                      fontSize: 12,
-                                                      color: colorScheme
-                                                          .onSurfaceVariant),
-                                                ),
-                                              ],
+                                          Row(
+                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            children: [
+                                              Expanded(
+                                                child: _buildRecipeTitles(
+                                                    context, recipe, colorScheme),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(
+                                                    Icons.edit_outlined,
+                                                    size: 20),
+                                                onPressed: () =>
+                                                    _editRecipe(recipe),
+                                                visualDensity:
+                                                    VisualDensity.compact,
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(
+                                                    Icons.copy_outlined,
+                                                    size: 20),
+                                                tooltip:
+                                                    l.t('recipe_duplicate'),
+                                                onPressed: () =>
+                                                    _duplicateRecipe(recipe),
+                                                visualDensity:
+                                                    VisualDensity.compact,
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(
+                                                    Icons.share_outlined,
+                                                    size: 20),
+                                                onPressed: () =>
+                                                    _shareRecipe(recipe),
+                                                visualDensity:
+                                                    VisualDensity.compact,
+                                              ),
+                                            ],
+                                          ),
+                                          if ((recipe['notes'] as String? ?? '').isNotEmpty) ...[
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 12, bottom: 8),
+                                              child: Divider(height: 1, color: colorScheme.outlineVariant),
                                             ),
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(
-                                                Icons.edit_outlined,
-                                                size: 20),
-                                            onPressed: () =>
-                                                _editRecipe(recipe),
-                                            visualDensity:
-                                                VisualDensity.compact,
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(
-                                                Icons.copy_outlined,
-                                                size: 20),
-                                            tooltip:
-                                                l.t('recipe_duplicate'),
-                                            onPressed: () =>
-                                                _duplicateRecipe(recipe),
-                                            visualDensity:
-                                                VisualDensity.compact,
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(
-                                                Icons.share_outlined,
-                                                size: 20),
-                                            onPressed: () =>
-                                                _shareRecipe(recipe),
-                                            visualDensity:
-                                                VisualDensity.compact,
-                                          ),
+                                            Text(
+                                              recipe['notes'] as String,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: colorScheme.onSurfaceVariant,
+                                                fontStyle: FontStyle.italic,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
                                         ],
                                       ),
                                     ),

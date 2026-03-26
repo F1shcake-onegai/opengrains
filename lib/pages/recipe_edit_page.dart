@@ -437,6 +437,8 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
     } else if (method == 'stand') {
       final initial = agitation['initialDuration'] as int? ?? 30;
       return 'Stand: ${_formatSec(initial)} initial';
+    } else if (method == 'disable') {
+      return 'Agitation: Disabled';
     } else {
       final speed = agitation['speed'] as int? ?? 60;
       return 'Rolling: $speed RPM';
@@ -501,6 +503,12 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
             label: Text(l.t('recipe_agitation_stand'),
                 style: const TextStyle(fontSize: 12)),
             icon: const Icon(Icons.hourglass_bottom, size: 16),
+          ),
+          ButtonSegment<String>(
+            value: 'disable',
+            label: Text(l.t('recipe_agitation_disable'),
+                style: const TextStyle(fontSize: 12)),
+            icon: const Icon(Icons.block, size: 16),
           ),
         ],
         selected: {method},
@@ -579,7 +587,7 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
             ),
           ],
         ),
-      ] else ...[
+      ] else if (method == 'rolling') ...[
         Row(
           children: [
             Text(l.t('recipe_agitation_speed'), style: labelStyle),

@@ -146,6 +146,7 @@
   "recipe_agitation_hand": "Hand",
   "recipe_agitation_rolling": "Rolling",
   "recipe_agitation_stand": "Stand",
+  "recipe_agitation_disable": "Disable",
   "recipe_agitation_initial": "Initial Agitation",
   "recipe_agitation_period": "Period",
   "recipe_agitation_duration": "Agitate",

@@ -145,6 +145,7 @@
   "recipe_agitation_hand": "手动",
   "recipe_agitation_rolling": "旋转",
   "recipe_agitation_stand": "静置",
+  "recipe_agitation_disable": "禁用",
   "recipe_agitation_initial": "初始搅拌",
   "recipe_agitation_period": "周期",
   "recipe_agitation_duration": "搅拌",

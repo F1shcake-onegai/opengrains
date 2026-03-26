@@ -225,7 +225,9 @@ class _LightpadPageState extends State<LightpadPage> {
   }
 
   Widget _buildFullscreen() {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
       body: GestureDetector(
         onLongPressStart: _onHoldStart,
         onLongPressMoveUpdate: _onHoldUpdate,
@@ -253,6 +255,7 @@ class _LightpadPageState extends State<LightpadPage> {
           ],
         ),
       ),
+    ),
     );
   }
 

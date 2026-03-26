@@ -57,6 +57,7 @@ class _TimerRunningPageState extends State<TimerRunningPage>
     with WidgetsBindingObserver {
   late List<Map<String, dynamic>> _steps;
   late TextEditingController _tempCtrl;
+  late FocusNode _tempFocus;
   double? _baseTemp; // null = N/A (no temp compensation)
 
   int _currentStep = 0;
@@ -92,6 +93,7 @@ class _TimerRunningPageState extends State<TimerRunningPage>
     _safelightActive = _redSafelight; // auto-on
     _tempCtrl = TextEditingController(
         text: _baseTemp?.toStringAsFixed(1) ?? '');
+    _tempFocus = FocusNode();
     if (_steps.isNotEmpty) {
       _remainingSeconds = _adjustedTime(0);
       _elapsedSeconds = 0;
@@ -106,6 +108,7 @@ class _TimerRunningPageState extends State<TimerRunningPage>
     _timer?.cancel();
     _cancelAllNotifications();
     _tempCtrl.dispose();
+    _tempFocus.dispose();
     WakelockPlus.disable();
     super.dispose();
   }
@@ -386,6 +389,8 @@ class _TimerRunningPageState extends State<TimerRunningPage>
     if (agitation == null) return const SizedBox.shrink();
     final method = agitation['method'] as String? ?? 'hand';
 
+    if (method == 'disable') return const SizedBox.shrink();
+
     if (method == 'rolling') {
       final speed = agitation['speed'] as int? ?? 60;
       return Container(
@@ -631,15 +636,35 @@ class _TimerRunningPageState extends State<TimerRunningPage>
   Widget _buildStepRoll(AppLocalizations l, ColorScheme cs) {
     return Column(
       key: ValueKey(_currentStep),
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        for (int i = math.max(0, _currentStep - 2); i < _currentStep; i++)
-          _buildStepRow(i, l, cs, isCurrent: false, isDone: true),
+        // Completed steps — pinned to bottom of top area
+        Expanded(
+          flex: 2,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              for (int i = math.max(0, _currentStep - 2);
+                  i < _currentStep;
+                  i++)
+                _buildStepRow(i, l, cs, isCurrent: false, isDone: true),
+            ],
+          ),
+        ),
+        // Current step — fixed center
         _buildStepRow(_currentStep, l, cs, isCurrent: true, isDone: false),
-        for (int i = _currentStep + 1;
-            i < math.min(_steps.length, _currentStep + 4);
-            i++)
-          _buildStepRow(i, l, cs, isCurrent: false, isDone: false),
+        // Remaining steps — pinned to top of bottom area
+        Expanded(
+          flex: 3,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              for (int i = _currentStep + 1;
+                  i < math.min(_steps.length, _currentStep + 3);
+                  i++)
+                _buildStepRow(i, l, cs, isCurrent: false, isDone: false),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -780,16 +805,22 @@ class _TimerRunningPageState extends State<TimerRunningPage>
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                 child: Row(
                   children: [
-                    if (_hasTempCompensation) ...[
-                      Text(l.t('timer_actual_temp'),
+                    Text(l.t('timer_actual_temp'),
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: cs.onSurfaceVariant)),
+                    const SizedBox(width: 8),
+                    if (!_hasTempCompensation)
+                      Text(l.t('recipe_temp_na'),
                           style: TextStyle(
-                              fontSize: 12,
-                              color: cs.onSurfaceVariant)),
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        width: 100,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: cs.onSurfaceVariant))
+                    else ...[
+                      IntrinsicWidth(
                         child: TextField(
                           controller: _tempCtrl,
+                          focusNode: _tempFocus,
                           keyboardType:
                               const TextInputType.numberWithOptions(
                                   decimal: true),
@@ -798,20 +829,24 @@ class _TimerRunningPageState extends State<TimerRunningPage>
                             FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                             LengthLimitingTextInputFormatter(5),
                           ],
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: cs.onSurface,
+                              height: 1),
                           decoration: InputDecoration(
                             counterText: '',
                             suffixText: '\u00b0C',
                             suffixStyle:
-                                TextStyle(color: cs.onSurfaceVariant),
-                            border: OutlineInputBorder(
-                              borderSide: BorderSide(color: cs.outline),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderSide: BorderSide(color: cs.outline),
+                                TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: cs.primary, width: 2),
                             ),
                             isDense: true,
+                            contentPadding: EdgeInsets.zero,
                           ),
-                          style: TextStyle(color: cs.onSurface),
                           onChanged: (_) => _onTempChanged(),
                           enabled: !_isRunning,
                         ),
