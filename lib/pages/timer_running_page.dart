@@ -182,13 +182,18 @@ class _TimerRunningPageState extends State<TimerRunningPage>
     final type = step['type'] as String;
     if (type != 'develop' && type != 'custom') return false;
     final agitation = step['agitation'] as Map<String, dynamic>?;
-    if (agitation == null || agitation['method'] != 'hand') return false;
+    final method = agitation?['method'] as String?;
+    if (agitation == null || (method != 'hand' && method != 'stand')) {
+      return false;
+    }
 
     final initialDuration = agitation['initialDuration'] as int? ?? 30;
-    final period = agitation['period'] as int? ?? 60;
-    final duration = agitation['duration'] as int? ?? 10;
 
     if (elapsed < initialDuration) return true;
+    if (method == 'stand') return false;
+
+    final period = agitation['period'] as int? ?? 60;
+    final duration = agitation['duration'] as int? ?? 10;
     if (period <= 0) return false;
 
     final afterInitial = elapsed - initialDuration;
@@ -291,23 +296,27 @@ class _TimerRunningPageState extends State<TimerRunningPage>
 
     if (type == 'develop' || type == 'custom') {
       final agitation = step['agitation'] as Map<String, dynamic>?;
-      if (agitation != null && agitation['method'] == 'hand') {
+      final agMethod = agitation?['method'] as String?;
+      if (agitation != null && (agMethod == 'hand' || agMethod == 'stand')) {
         final initialDuration = agitation['initialDuration'] as int? ?? 30;
-        final period = agitation['period'] as int? ?? 60;
-        final duration = agitation['duration'] as int? ?? 10;
-        final totalTime = _adjustedTime(_currentStep);
 
-        for (int n = 0;; n++) {
-          final agitateStart =
-              initialDuration + (n + 1) * period - duration;
-          if (agitateStart >= totalTime) break;
-          final fromNow = agitateStart - _elapsedSeconds;
-          if (fromNow > 0 && fromNow < _remainingSeconds) {
-            _scheduleNotification(
-              delay: Duration(seconds: fromNow),
-              title: stepLabel,
-              body: l.t('timer_notif_agitate'),
-            );
+        if (agMethod == 'hand') {
+          final period = agitation['period'] as int? ?? 60;
+          final duration = agitation['duration'] as int? ?? 10;
+          final totalTime = _adjustedTime(_currentStep);
+
+          for (int n = 0;; n++) {
+            final agitateStart =
+                initialDuration + (n + 1) * period - duration;
+            if (agitateStart >= totalTime) break;
+            final fromNow = agitateStart - _elapsedSeconds;
+            if (fromNow > 0 && fromNow < _remainingSeconds) {
+              _scheduleNotification(
+                delay: Duration(seconds: fromNow),
+                title: stepLabel,
+                body: l.t('timer_notif_agitate'),
+              );
+            }
           }
         }
       }

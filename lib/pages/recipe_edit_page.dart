@@ -20,6 +20,7 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
   String _processType = 'bw_neg';
   late TextEditingController _notesCtrl;
   late List<Map<String, dynamic>> _steps;
+  final Set<int> _expandedAgitation = {};
   bool _redSafelight = false;
 
   bool get _isEditing => widget.existingRecipe != null;
@@ -73,28 +74,19 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
       }
       if (type == 'wash') step['speedWash'] = false;
       _steps.add(step);
+      if (type == 'develop' || type == 'custom') {
+        _expandedAgitation.add(_steps.length - 1);
+      }
     });
   }
 
   void _removeStep(int index) {
-    setState(() => _steps.removeAt(index));
-  }
-
-  void _moveStepUp(int index) {
-    if (index <= 0) return;
     setState(() {
-      final step = _steps.removeAt(index);
-      _steps.insert(index - 1, step);
+      _steps.removeAt(index);
+      _expandedAgitation.clear();
     });
   }
 
-  void _moveStepDown(int index) {
-    if (index >= _steps.length - 1) return;
-    setState(() {
-      final step = _steps.removeAt(index);
-      _steps.insert(index + 1, step);
-    });
-  }
 
   void _showAddStepSheet() {
     final l = AppLocalizations.of(context);
@@ -154,10 +146,12 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
     if (_steps.isEmpty) {
       errors.add(l.t('recipe_valid_steps'));
     }
-    final totalTime = _steps.fold<int>(
-        0, (sum, s) => sum + ((s['time'] as int?) ?? 0));
-    if (_steps.isNotEmpty && totalTime <= 0) {
-      errors.add(l.t('recipe_valid_time'));
+    for (int i = 0; i < _steps.length; i++) {
+      final t = _steps[i]['time'] as int? ?? 0;
+      if (t <= 0) {
+        errors.add(l.t('recipe_valid_step_time_zero',
+            {'step': (i + 1).toString()}));
+      }
     }
     return errors;
   }
@@ -279,55 +273,130 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
     }
   }
 
+  Widget _buildTimeField(TextEditingController controller,
+      {String hint = '00', int max = 99, VoidCallback? onCommit}) {
+    final cs = Theme.of(context).colorScheme;
+    final focusNode = FocusNode();
+    focusNode.addListener(() {
+      if (!focusNode.hasFocus) {
+        final v = (int.tryParse(controller.text) ?? 0).clamp(0, max);
+        controller.text = v.toString().padLeft(2, '0');
+        onCommit?.call();
+      }
+    });
+    return SizedBox(
+      width: 36,
+      child: TextField(
+        controller: controller,
+        focusNode: focusNode,
+        maxLength: 2,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(2),
+        ],
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: cs.onSurface,
+          height: 1,
+        ),
+        decoration: InputDecoration(
+          enabledBorder: InputBorder.none,
+          focusedBorder: UnderlineInputBorder(
+            borderSide: BorderSide(color: cs.primary, width: 2),
+          ),
+          isDense: true,
+          counterText: '',
+          contentPadding: EdgeInsets.zero,
+          hintText: hint,
+          hintStyle: TextStyle(color: cs.onSurfaceVariant.withAlpha(100)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNumericField(String initialValue,
+      {int max = 999, String? suffix, ValueChanged<int>? onCommit}) {
+    final cs = Theme.of(context).colorScheme;
+    final maxDigits = max.toString().length;
+    final ctrl = TextEditingController(text: initialValue);
+    final focusNode = FocusNode();
+    focusNode.addListener(() {
+      if (!focusNode.hasFocus) {
+        final v = (int.tryParse(ctrl.text) ?? 0).clamp(0, max);
+        ctrl.text = v.toString();
+        onCommit?.call(v);
+      }
+    });
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: maxDigits * 12.0 + 4,
+          child: TextField(
+            controller: ctrl,
+            focusNode: focusNode,
+            maxLength: maxDigits,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(maxDigits),
+            ],
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: cs.onSurface,
+              height: 1,
+            ),
+            decoration: InputDecoration(
+              enabledBorder: InputBorder.none,
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: cs.primary, width: 2),
+              ),
+              isDense: true,
+              counterText: '',
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        ),
+        if (suffix != null) ...[
+          const SizedBox(width: 4),
+          Text(suffix, style: TextStyle(
+              fontSize: 12, color: cs.onSurfaceVariant)),
+        ],
+      ],
+    );
+  }
+
   Widget _buildTimeInput(int seconds, ValueChanged<int> onChanged) {
     final m = seconds ~/ 60;
     final s = seconds % 60;
     final minCtrl = TextEditingController(text: m.toString().padLeft(2, '0'));
     final secCtrl = TextEditingController(text: s.toString().padLeft(2, '0'));
+    final cs = Theme.of(context).colorScheme;
 
-    void update() {
-      final mins = int.tryParse(minCtrl.text) ?? 0;
+    void commit() {
+      final mins = (int.tryParse(minCtrl.text) ?? 0).clamp(0, 99);
       final secs = (int.tryParse(secCtrl.text) ?? 0).clamp(0, 59);
       onChanged(mins * 60 + secs);
     }
 
     return Row(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        SizedBox(
-          width: 64,
-          child: TextField(
-            controller: minCtrl,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            textAlign: TextAlign.center,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              isDense: true,
-              hintText: 'mm',
-            ),
-            onChanged: (_) => update(),
-          ),
+        _buildTimeField(minCtrl, hint: 'mm', max: 99, onCommit: commit),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 2),
+          child: Text(':', style: TextStyle(
+              fontSize: 16, fontWeight: FontWeight.bold,
+              height: 1, color: cs.onSurface)),
         ),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4),
-          child: Text(':', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        ),
-        SizedBox(
-          width: 64,
-          child: TextField(
-            controller: secCtrl,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            textAlign: TextAlign.center,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              isDense: true,
-              hintText: 'ss',
-            ),
-            onChanged: (_) => update(),
-          ),
-        ),
+        _buildTimeField(secCtrl, hint: 'ss', max: 59, onCommit: commit),
       ],
     );
   }
@@ -342,6 +411,43 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
       case 'custom': return Icons.info_outline;
       default: return Icons.help_outline;
     }
+  }
+
+  Color _stepColor(String type) {
+    switch (type) {
+      case 'develop': return Theme.of(context).colorScheme.primary;
+      case 'stop': return Colors.amber;
+      case 'fix': return Colors.teal;
+      case 'wash': return Colors.blue;
+      case 'rinse': return Colors.lightBlue;
+      case 'custom': return Colors.grey;
+      default: return Colors.grey;
+    }
+  }
+
+  String _agitationSummary(Map<String, dynamic> step) {
+    final agitation = step['agitation'] as Map<String, dynamic>?;
+    if (agitation == null) return '';
+    final method = agitation['method'] as String? ?? 'hand';
+    if (method == 'hand') {
+      final initial = agitation['initialDuration'] as int? ?? 30;
+      final period = agitation['period'] as int? ?? 60;
+      final duration = agitation['duration'] as int? ?? 10;
+      return 'Hand: ${_formatSec(initial)} initial, every ${_formatSec(period)} for ${_formatSec(duration)}';
+    } else if (method == 'stand') {
+      final initial = agitation['initialDuration'] as int? ?? 30;
+      return 'Stand: ${_formatSec(initial)} initial';
+    } else {
+      final speed = agitation['speed'] as int? ?? 60;
+      return 'Rolling: $speed RPM';
+    }
+  }
+
+  static String _formatSec(int seconds) {
+    if (seconds < 60) return '${seconds}s';
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return s == 0 ? '${m}m' : '${m}m${s}s';
   }
 
   String _stepLabel(String type, AppLocalizations l) {
@@ -389,6 +495,12 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
             label: Text(l.t('recipe_agitation_rolling'),
                 style: const TextStyle(fontSize: 12)),
             icon: const Icon(Icons.rotate_right, size: 16),
+          ),
+          ButtonSegment<String>(
+            value: 'stand',
+            label: Text(l.t('recipe_agitation_stand'),
+                style: const TextStyle(fontSize: 12)),
+            icon: const Icon(Icons.hourglass_bottom, size: 16),
           ),
         ],
         selected: {method},
@@ -448,26 +560,35 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
             ),
           ],
         ),
+      ] else if (method == 'stand') ...[
+        // Stand: only initial agitation
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l.t('recipe_agitation_initial'), style: labelStyle),
+                  const SizedBox(height: 4),
+                  _buildTimeInput(
+                    agitation['initialDuration'] as int? ?? 30,
+                    (v) => agitation['initialDuration'] = v,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ] else ...[
         Row(
           children: [
             Text(l.t('recipe_agitation_speed'), style: labelStyle),
             const SizedBox(width: 8),
-            SizedBox(
-              width: 80,
-              child: TextField(
-                controller: TextEditingController(
-                    text: (agitation['speed'] as int? ?? 60).toString()),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: InputDecoration(
-                  suffixText: l.t('recipe_agitation_rpm'),
-                  border: const OutlineInputBorder(),
-                  isDense: true,
-                ),
-                onChanged: (v) =>
-                    agitation['speed'] = int.tryParse(v) ?? 60,
-              ),
+            _buildNumericField(
+              (agitation['speed'] as int? ?? 60).toString(),
+              max: 999,
+              suffix: l.t('recipe_agitation_rpm'),
+              onCommit: (v) => agitation['speed'] = v,
             ),
           ],
         ),
@@ -664,118 +785,190 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
               ),
 
             // Step list
-            ...List.generate(_steps.length, (i) {
-              final step = _steps[i];
-              final type = step['type'] as String;
-
-              return Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
+            ReorderableListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              buildDefaultDragHandles: false,
+              proxyDecorator: (child, index, animation) {
+                return Material(
+                  elevation: 4,
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: colorScheme.outlineVariant),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(_stepIcon(type),
-                              color: colorScheme.primary, size: 20),
-                          const SizedBox(width: 8),
-                          Text('${i + 1}. ${_stepLabel(type, l)}',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.onSurface)),
-                          const Spacer(),
-                          IconButton(
-                            icon: Icon(Icons.arrow_drop_up,
-                                size: 20,
-                                color: i > 0
-                                    ? colorScheme.onSurfaceVariant
-                                    : colorScheme.onSurfaceVariant
-                                        .withAlpha(80)),
-                            onPressed: i > 0 ? () => _moveStepUp(i) : null,
-                            visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                                minWidth: 28, minHeight: 28),
+                  child: child,
+                );
+              },
+              onReorder: (oldIndex, newIndex) {
+                setState(() {
+                  if (newIndex > oldIndex) newIndex--;
+                  final step = _steps.removeAt(oldIndex);
+                  _steps.insert(newIndex, step);
+                  _expandedAgitation.clear();
+                });
+              },
+              itemCount: _steps.length,
+              itemBuilder: (context, i) {
+                final step = _steps[i];
+                final type = step['type'] as String;
+
+                final stepColor = _stepColor(type);
+                final isExpanded = _expandedAgitation.contains(i);
+
+                return Dismissible(
+                  key: ValueKey(step),
+                  direction: DismissDirection.endToStart,
+                  confirmDismiss: (_) async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: Text(l.t('recipe_delete_step_title')),
+                        content: Text(l.t('recipe_delete_step_message')),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: Text(l.t('recipe_cancel')),
                           ),
-                          IconButton(
-                            icon: Icon(Icons.arrow_drop_down,
-                                size: 20,
-                                color: i < _steps.length - 1
-                                    ? colorScheme.onSurfaceVariant
-                                    : colorScheme.onSurfaceVariant
-                                        .withAlpha(80)),
-                            onPressed: i < _steps.length - 1
-                                ? () => _moveStepDown(i)
-                                : null,
-                            visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                                minWidth: 28, minHeight: 28),
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.delete_outline,
-                                size: 20, color: colorScheme.error),
-                            onPressed: () => _removeStep(i),
-                            visualDensity: VisualDensity.compact,
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: Text(l.t('recipe_delete'),
+                                style: TextStyle(color: colorScheme.error)),
                           ),
                         ],
                       ),
-                      if (type == 'develop' || type == 'custom') ...[
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: TextEditingController(
-                              text: step['label'] as String? ?? ''),
-                          decoration: InputDecoration(
-                            hintText: l.t('recipe_step_label_hint'),
-                            border: const OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          onChanged: (v) => step['label'] = v,
+                    );
+                    return confirmed == true;
+                  },
+                  onDismissed: (_) => _removeStep(i),
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20),
+                    decoration: BoxDecoration(
+                      color: colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.delete_outline,
+                        color: colorScheme.onErrorContainer),
+                  ),
+                  child: Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: colorScheme.outlineVariant),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          left: BorderSide(color: stepColor, width: 4),
                         ),
-                        const SizedBox(height: 8),
-                        ..._buildAgitationUI(step, l, colorScheme),
-                      ],
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Text(l.t('recipe_step_time'),
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  color: colorScheme.onSurfaceVariant)),
-                          const SizedBox(width: 8),
-                          _buildTimeInput(
-                            step['time'] as int? ?? 60,
-                            (v) => step['time'] = v,
-                          ),
-                        ],
                       ),
-                      if (type == 'wash') ...[
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Text(l.t('recipe_speed_wash'),
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: colorScheme.onSurfaceVariant)),
-                            const Spacer(),
-                            Switch(
-                              value: step['speedWash'] as bool? ?? false,
-                              onChanged: (v) =>
-                                  setState(() => step['speedWash'] = v),
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(_stepIcon(type),
+                                  color: stepColor, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text('${i + 1}. ${_stepLabel(type, l)}',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: colorScheme.onSurface)),
+                              ),
+                              _buildTimeInput(
+                                step['time'] as int? ?? 60,
+                                (val) => setState(() => step['time'] = val),
+                              ),
+                              const SizedBox(width: 8),
+                              ReorderableDragStartListener(
+                                index: i,
+                                child: Icon(Icons.drag_handle,
+                                    size: 20,
+                                    color: colorScheme.onSurfaceVariant),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          if (type == 'develop' || type == 'custom') ...[
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: TextEditingController(
+                                  text: step['label'] as String? ?? ''),
+                              decoration: InputDecoration(
+                                hintText: l.t('recipe_step_label_hint'),
+                                border: const OutlineInputBorder(),
+                                isDense: true,
+                              ),
+                              onChanged: (v) => step['label'] = v,
+                            ),
+                            const SizedBox(height: 4),
+                            InkWell(
+                              onTap: () => setState(() {
+                                if (isExpanded) {
+                                  _expandedAgitation.remove(i);
+                                } else {
+                                  _expandedAgitation.add(i);
+                                }
+                              }),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      isExpanded
+                                          ? Icons.expand_less
+                                          : Icons.expand_more,
+                                      size: 18,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        isExpanded
+                                            ? l.t('recipe_agitation')
+                                            : _agitationSummary(step),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            if (isExpanded) ...[
+                              const SizedBox(height: 4),
+                              ..._buildAgitationUI(step, l, colorScheme),
+                            ],
+                          ],
+                          if (type == 'wash') ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Text(l.t('recipe_speed_wash'),
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: colorScheme.onSurfaceVariant)),
+                                const Spacer(),
+                                Switch(
+                                  value: step['speedWash'] as bool? ?? false,
+                                  onChanged: (v) =>
+                                      setState(() => step['speedWash'] = v),
+                                ),
+                              ],
                             ),
                           ],
-                        ),
-                      ],
-                    ],
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              );
-            }),
+                );
+              },
+            ),
           ],
         ),
       ),
