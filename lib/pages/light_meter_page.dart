@@ -33,6 +33,7 @@ class _LightMeterPageState extends State<LightMeterPage>
       TextEditingController(text: '12.0');
   DateTime _lastFrameTime = DateTime.now();
 
+
   // Parameters
   ExposureStep _exposureStep = ExposureStep.third;
   CalculatedParam _calculatedParam = CalculatedParam.shutterSpeed;
@@ -115,6 +116,16 @@ class _LightMeterPageState extends State<LightMeterPage>
       }
       _controller = controller;
       setState(() => _cameraReady = true);
+
+      // Lock exposure to a fixed neutral point so frame luminance
+      // reflects actual scene brightness, not AE compensation.
+      try {
+        await controller.setExposureMode(ExposureMode.locked);
+        await controller.setExposureOffset(0.0);
+      } catch (_) {
+        // Some devices may not support locking — fall back to auto
+      }
+
       controller.startImageStream(_processFrame);
     } catch (e, stack) {
       ErrorLog.log('Camera Init', e, stack);
@@ -137,6 +148,8 @@ class _LightMeterPageState extends State<LightMeterPage>
 
     // Convert luminance (0-255) to EV
     // Calibrated so that mid-gray (~118) maps to roughly EV 12
+    // Camera exposure is locked at init so frame brightness reflects
+    // actual scene luminance, not AE-adjusted values.
     final ev = luminance > 0
         ? (math.log(luminance / 8.0) / math.ln2) + 4.0
         : 0.0;
@@ -234,9 +247,10 @@ class _LightMeterPageState extends State<LightMeterPage>
     setState(() {
       _pointMeterPosition = Offset(nx.clamp(0, 1), ny.clamp(0, 1));
     });
-    // Tell camera to meter at this point
     _controller?.setExposurePoint(
         Offset(nx.clamp(0, 1), ny.clamp(0, 1)));
+    // Re-lock exposure at the new point
+    _controller?.setExposureMode(ExposureMode.locked);
   }
 
   void _clearPointMeter() {
@@ -244,6 +258,7 @@ class _LightMeterPageState extends State<LightMeterPage>
       _pointMeterPosition = null;
     });
     _controller?.setExposurePoint(null);
+    _controller?.setExposureMode(ExposureMode.locked);
   }
 
   // ───── Calculation ─────
