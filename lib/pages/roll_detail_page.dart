@@ -391,35 +391,56 @@ class _RollDetailPageState extends State<RollDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Roll info fields
-            Text(l.t('film_brand'),
-                style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _brandCtrl,
-              focusNode: _brandFocus,
-              onChanged: (_) => _onFieldChanged(),
-              decoration: InputDecoration(
-                hintText: l.t('film_brand_hint'),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(l.t('film_model'),
-                style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _modelCtrl,
-              focusNode: _modelFocus,
-              onChanged: (_) => _onFieldChanged(),
-              decoration: InputDecoration(
-                hintText: l.t('film_model_hint'),
-                border: OutlineInputBorder(),
-              ),
+            // Roll info fields — Brand + Model (1:2 ratio)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Flexible(
+                  flex: 1,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l.t('film_brand'),
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.onSurfaceVariant)),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _brandCtrl,
+                        focusNode: _brandFocus,
+                        onChanged: (_) => _onFieldChanged(),
+                        decoration: InputDecoration(
+                          hintText: l.t('film_brand_hint'),
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Flexible(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l.t('film_model'),
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.onSurfaceVariant)),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _modelCtrl,
+                        focusNode: _modelFocus,
+                        onChanged: (_) => _onFieldChanged(),
+                        decoration: InputDecoration(
+                          hintText: l.t('film_model_hint'),
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             // ISO & Exposure Compensation side by side (1:3 ratio)
@@ -636,6 +657,20 @@ class _RollDetailPageState extends State<RollDetailPage> {
                           fontWeight: FontWeight.bold)),
                 ),
               ),
+              if (shot['latitude'] != null)
+                Positioned(
+                  right: 4,
+                  bottom: 4,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface.withAlpha(200),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Icon(Icons.location_on,
+                        size: 12, color: colorScheme.primary),
+                  ),
+                ),
             ],
           ),
         ),

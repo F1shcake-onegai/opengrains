@@ -8,6 +8,10 @@ import '../services/error_log.dart';
 import '../services/film_storage.dart';
 import '../services/import_export_service.dart';
 import '../services/light_meter_constants.dart';
+import '../services/location_service.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'map_picker_page.dart';
 import 'package:uuid/uuid.dart';
 import '../services/app_localizations.dart';
 import 'image_viewer_page.dart';
@@ -35,6 +39,14 @@ class _ShotPageState extends State<ShotPage> {
   final _picker = ImagePicker();
   double _ec = 0.0;
   double _ecStep = 1 / 3;
+  double? _latitude;
+  double? _longitude;
+  bool _locationLoading = false;
+  late final TextEditingController _latCtrl;
+  late final TextEditingController _lngCtrl;
+  late final FocusNode _latFocus;
+  late final FocusNode _lngFocus;
+  final MapController _previewMapCtrl = MapController();
 
   bool get _isEditing => widget.existingShot != null;
 
@@ -57,6 +69,14 @@ class _ShotPageState extends State<ShotPage> {
       }
     });
     _ec = (widget.existingShot?['ec'] as num?)?.toDouble() ?? 0.0;
+    _latitude = (widget.existingShot?['latitude'] as num?)?.toDouble();
+    _longitude = (widget.existingShot?['longitude'] as num?)?.toDouble();
+    _latCtrl = TextEditingController(
+        text: _latitude?.toStringAsFixed(4) ?? '');
+    _lngCtrl = TextEditingController(
+        text: _longitude?.toStringAsFixed(4) ?? '');
+    _latFocus = FocusNode()..addListener(_onCoordFocusChanged);
+    _lngFocus = FocusNode()..addListener(_onCoordFocusChanged);
     _loadEcStep();
     _imagePath =
         widget.existingShot?['imagePath'] as String?;
@@ -105,6 +125,94 @@ class _ShotPageState extends State<ShotPage> {
     return '${_ec > 0 ? "+" : ""}${_ec.toStringAsFixed(1)}';
   }
 
+  Future<void> _captureLocation() async {
+    setState(() => _locationLoading = true);
+    try {
+      final result = await LocationService.getCurrentPosition();
+      if (result != null && mounted) {
+        setState(() {
+          _latitude = result.$1;
+          _longitude = result.$2;
+        });
+        _syncCoordControllers();
+      } else if (mounted) {
+        final l = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l.t('shot_location_unavailable'))),
+        );
+      }
+    } catch (e, stack) {
+      ErrorLog.log('GPS Location', e, stack);
+      if (mounted) {
+        final l = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(DeveloperSettings.verbose
+              ? '${l.t('shot_location_error')}: $e'
+              : l.t('shot_location_error'))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _locationLoading = false);
+    }
+  }
+
+  void _syncCoordControllers() {
+    _latCtrl.text = _latitude?.toStringAsFixed(4) ?? '';
+    _lngCtrl.text = _longitude?.toStringAsFixed(4) ?? '';
+  }
+
+  void _onCoordFocusChanged() {
+    if (_latFocus.hasFocus || _lngFocus.hasFocus) return;
+    // Both lost focus — commit values
+    final lat = double.tryParse(_latCtrl.text);
+    final lng = double.tryParse(_lngCtrl.text);
+    if (lat != null && lng != null) {
+      final cLat = lat.clamp(-90.0, 90.0);
+      final cLng = lng.clamp(-180.0, 180.0);
+      setState(() {
+        _latitude = cLat;
+        _longitude = cLng;
+      });
+      _syncCoordControllers();
+      try {
+        _previewMapCtrl.move(
+            LatLng(cLat, cLng), _previewMapCtrl.camera.zoom);
+      } catch (_) {}
+    } else if (_latCtrl.text.isEmpty && _lngCtrl.text.isEmpty) {
+      setState(() {
+        _latitude = null;
+        _longitude = null;
+      });
+    }
+  }
+
+  void _clearLocation() {
+    setState(() {
+      _latitude = null;
+      _longitude = null;
+    });
+    _syncCoordControllers();
+  }
+
+  Future<void> _openMapPicker() async {
+    final result = await Navigator.push<(double, double)>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapPickerPage(
+          initialLat: _latitude,
+          initialLng: _longitude,
+        ),
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _latitude = result.$1;
+        _longitude = result.$2;
+      });
+      _syncCoordControllers();
+    }
+  }
+
   Future<void> _resolveImage() async {
     if (_imagePath == null || _imagePath!.isEmpty) {
       setState(() => _resolvedPath = null);
@@ -119,6 +227,10 @@ class _ShotPageState extends State<ShotPage> {
     _seqCtrl.dispose();
     _commentFocus.dispose();
     _commentCtrl.dispose();
+    _latCtrl.dispose();
+    _lngCtrl.dispose();
+    _latFocus.dispose();
+    _lngFocus.dispose();
     super.dispose();
   }
 
@@ -212,6 +324,8 @@ class _ShotPageState extends State<ShotPage> {
       'imagePath': _imagePath ?? '',
       'comment': _commentCtrl.text,
       'ec': _ec,
+      if (_latitude != null) 'latitude': _latitude,
+      if (_longitude != null) 'longitude': _longitude,
       'createdAt': widget.existingShot?['createdAt'] ??
           DateTime.now().millisecondsSinceEpoch,
     };
@@ -239,53 +353,97 @@ class _ShotPageState extends State<ShotPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Sequence number
-            Text(l.t('shot_sequence'),
-                style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _seqCtrl,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(
-                  border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 16),
-            // Exposure compensation
-            Text(l.t('shot_ec'),
-                style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 6),
+            // Sequence + Exposure compensation (single row)
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                GestureDetector(
-                  onDoubleTap: () => setState(() => _ec = 0.0),
-                  child: SizedBox(
-                    width: 56,
-                    child: Text(_ecLabel,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold)),
+                // Seq # (1/4 width)
+                Flexible(
+                  flex: 1,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Seq #',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.onSurfaceVariant)),
+                      const SizedBox(height: 6),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 14),
+                        child: TextField(
+                          controller: _seqCtrl,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly
+                          ],
+                          textAlign: TextAlign.left,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                          decoration: InputDecoration(
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(
+                                  color: colorScheme.primary, width: 2),
+                            ),
+                            isDense: true,
+                            contentPadding:
+                                const EdgeInsets.only(left: 16, bottom: 4),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Slider(
-                    value: _ec,
-                    min: -3.0,
-                    max: 3.0,
-                    divisions: (6 / _ecStep).round(),
-                    label: _ecLabel,
-                    onChanged: (v) {
-                      setState(() {
-                        _ec = (v / _ecStep).roundToDouble() * _ecStep;
-                      });
-                    },
+                const SizedBox(width: 12),
+                // EC (3/4 width)
+                Flexible(
+                  flex: 3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l.t('shot_ec'),
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.onSurfaceVariant)),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onDoubleTap: () =>
+                                setState(() => _ec = 0.0),
+                            child: SizedBox(
+                              width: 40,
+                              child: Text(_ecLabel,
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                          fontWeight:
+                                              FontWeight.bold)),
+                            ),
+                          ),
+                          Expanded(
+                            child: Slider(
+                              value: _ec,
+                              min: -3.0,
+                              max: 3.0,
+                              divisions: (6 / _ecStep).round(),
+                              label: _ecLabel,
+                              onChanged: (v) {
+                                setState(() {
+                                  _ec = (v / _ecStep)
+                                          .roundToDouble() *
+                                      _ecStep;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -352,6 +510,191 @@ class _ShotPageState extends State<ShotPage> {
                 ),
               ],
             ),
+            // Location section
+            const SizedBox(height: 20),
+            Text(l.t('shot_location'),
+                style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 6),
+            if (_latitude != null) ...[
+              // Inline map preview
+              GestureDetector(
+                onTap: _openMapPicker,
+                child: Container(
+                  height: 150,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: colorScheme.outlineVariant),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: IgnorePointer(
+                      child: FlutterMap(
+                        mapController: _previewMapCtrl,
+                        options: MapOptions(
+                          initialCenter:
+                              LatLng(_latitude!, _longitude!),
+                          initialZoom: 15,
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate:
+                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName:
+                                'com.muxianli.photographytoolbox',
+                          ),
+                          MarkerLayer(
+                            markers: [
+                              Marker(
+                                point: LatLng(
+                                    _latitude!, _longitude!),
+                                width: 40,
+                                height: 40,
+                                child: Icon(Icons.location_pin,
+                                    size: 40,
+                                    color: colorScheme.error),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              // Editable coordinates + clear button
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text('Lat',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.onSurfaceVariant)),
+                  ),
+                  const SizedBox(width: 6),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: SizedBox(
+                    width: 90,
+                    child: TextField(
+                      controller: _latCtrl,
+                      focusNode: _latFocus,
+                      keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true, signed: true),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(
+                            RegExp(r'[0-9.\-]')),
+                      ],
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colorScheme.onSurface,
+                      ),
+                      decoration: InputDecoration(
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                              color: colorScheme.primary, width: 2),
+                        ),
+                        isDense: true,
+                        contentPadding:
+                            const EdgeInsets.only(bottom: 4),
+                      ),
+                    ),
+                  ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                        left: 6, right: 6, bottom: 4),
+                    child: Text(',',
+                        style: TextStyle(
+                            fontSize: 14,
+                            color: colorScheme.onSurfaceVariant)),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text('Lng',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.onSurfaceVariant)),
+                  ),
+                  const SizedBox(width: 6),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: SizedBox(
+                    width: 90,
+                    child: TextField(
+                      controller: _lngCtrl,
+                      focusNode: _lngFocus,
+                      keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true, signed: true),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(
+                            RegExp(r'[0-9.\-]')),
+                      ],
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colorScheme.onSurface,
+                      ),
+                      decoration: InputDecoration(
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                              color: colorScheme.primary, width: 2),
+                        ),
+                        isDense: true,
+                        contentPadding:
+                            const EdgeInsets.only(bottom: 4),
+                      ),
+                    ),
+                  ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: _clearLocation,
+                    icon: const Icon(Icons.close, size: 20),
+                    tooltip: l.t('shot_clear_location'),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ),
+            ] else ...[
+              // No location — capture (mobile) or pick on map
+              Row(
+                children: [
+                  if (_isMobilePlatform) ...[
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed:
+                            _locationLoading ? null : _captureLocation,
+                        icon: _locationLoading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2))
+                            : const Icon(Icons.my_location),
+                        label: Text(l.t('shot_capture_location')),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _openMapPicker,
+                      icon: const Icon(Icons.map_outlined),
+                      label: Text(l.t('shot_pick_on_map')),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 20),
             // Comment section
             Text(l.t('shot_comment'),
